@@ -6,6 +6,7 @@ const path = require('path');
 const multer = require('multer');
 const http = require('http');
 const socketIO = require('socket.io');
+require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
@@ -83,6 +84,16 @@ app.get('/', (req, res) => {
     user: client.user,
     status: currentStatus,
     activities: currentActivities
+  });
+});
+
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    botReady,
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    version: require('./package.json').version
   });
 });
 
