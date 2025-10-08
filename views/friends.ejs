@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Friends - Discord Web Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/servers">Servers</a></li>
+        <li><a href="/dms">DMs</a></li>
+        <li><a href="/friends">Friends</a></li>
+        <li><a href="/voice">Voice</a></li>
+      </ul>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-header">➕ Add Friend</div>
+      <form onsubmit="event.preventDefault(); addFriend();">
+        <div class="form-group">
+          <input type="text" class="form-control" id="friendUsername" placeholder="Enter username#1234" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Send Friend Request</button>
+      </form>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('friends-tab')">Friends (<%= friends.length %>)</div>
+      <div class="tab" onclick="switchTab('pending-tab')">Pending (<%= pending.length %>)</div>
+      <div class="tab" onclick="switchTab('blocked-tab')">Blocked (<%= blocked.length %>)</div>
+    </div>
+
+    <div id="friends-tab" class="tab-content active">
+      <div class="card">
+        <div class="card-header">👥 Friends</div>
+        <div class="grid grid-2">
+          <% friends.forEach(friend => { %>
+          <div class="friend-card">
+            <img src="<%= friend.avatar %>" alt="<%= friend.username %>" class="friend-avatar">
+            <div class="friend-info">
+              <div class="friend-name">
+                <%= friend.username %>
+                <span class="status-indicator status-<%= friend.status %>"></span>
+              </div>
+              <div class="friend-meta">Status: <%= friend.status %></div>
+              <% if (friend.activities && friend.activities.length > 0) { %>
+              <div class="friend-meta">
+                <%= friend.activities[0].name %>
+              </div>
+              <% } %>
+              <div class="flex gap-1 mt-1">
+                <button class="btn btn-sm btn-danger" onclick="removeFriend('<%= friend.id %>')">Remove</button>
+                <button class="btn btn-sm btn-secondary" onclick="blockUser('<%= friend.id %>')">Block</button>
+              </div>
+            </div>
+          </div>
+          <% }); %>
+        </div>
+        <% if (friends.length === 0) { %>
+        <p class="text-center" style="color: var(--text-muted); padding: 40px;">
+          No friends yet.
+        </p>
+        <% } %>
+      </div>
+    </div>
+
+    <div id="pending-tab" class="tab-content">
+      <div class="card">
+        <div class="card-header">⏳ Pending Friend Requests</div>
+        <div class="grid grid-2">
+          <% pending.forEach(req => { %>
+          <div class="friend-card">
+            <img src="<%= req.avatar %>" alt="<%= req.username %>" class="friend-avatar">
+            <div class="friend-info">
+              <div class="friend-name"><%= req.username %></div>
+              <div class="flex gap-1 mt-1">
+                <% if (!req.outgoing) { %>
+                <button class="btn btn-sm btn-success" onclick="acceptFriendRequest('<%= req.id %>')">Accept</button>
+                <% } else { %>
+                <span class="badge badge-warning">Outgoing</span>
+                <% } %>
+                <button class="btn btn-sm btn-danger" onclick="removeFriend('<%= req.id %>')">Decline</button>
+              </div>
+            </div>
+          </div>
+          <% }); %>
+        </div>
+        <% if (pending.length === 0) { %>
+        <p class="text-center" style="color: var(--text-muted); padding: 40px;">
+          No pending requests.
+        </p>
+        <% } %>
+      </div>
+    </div>
+
+    <div id="blocked-tab" class="tab-content">
+      <div class="card">
+        <div class="card-header">🚫 Blocked Users</div>
+        <div class="grid grid-2">
+          <% blocked.forEach(user => { %>
+          <div class="friend-card">
+            <img src="<%= user.avatar %>" alt="<%= user.username %>" class="friend-avatar">
+            <div class="friend-info">
+              <div class="friend-name"><%= user.username %></div>
+              <button class="btn btn-sm btn-secondary mt-1" onclick="unblockUser('<%= user.id %>')">Unblock</button>
+            </div>
+          </div>
+          <% }); %>
+        </div>
+        <% if (blocked.length === 0) { %>
+        <p class="text-center" style="color: var(--text-muted); padding: 40px;">
+          No blocked users.
+        </p>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    function addFriend() {
+      const username = document.getElementById('friendUsername').value;
+      sendFriendRequest(username).then(success => {
+        if (success) {
+          document.getElementById('friendUsername').value = '';
+          setTimeout(() => location.reload(), 1000);
+        }
+      });
+    }
+    
+    async function unblockUser(userId) {
+      try {
+        await apiCall('/unblock-user', 'POST', { userId });
+        showNotification('User unblocked!', 'success');
+        setTimeout(() => location.reload(), 1000);
+      } catch (error) {
+        // Error already shown by apiCall
+      }
+    }
+  </script>
+</body>
+</html>

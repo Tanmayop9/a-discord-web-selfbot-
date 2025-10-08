@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice Channels - Discord Web Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/servers">Servers</a></li>
+        <li><a href="/dms">DMs</a></li>
+        <li><a href="/friends">Friends</a></li>
+        <li><a href="/voice">Voice</a></li>
+      </ul>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <% if (currentVoice) { %>
+    <div class="card">
+      <div class="card-header">🔊 Currently Connected</div>
+      <div class="alert alert-success">
+        Connected to <strong><%= currentVoice.name %></strong> in <strong><%= currentVoice.guild %></strong>
+      </div>
+      <div class="flex gap-1">
+        <button class="btn btn-danger" onclick="leaveVoice()">Leave Channel</button>
+        <button class="btn btn-<%= currentVoice.muted ? 'success' : 'secondary' %>" onclick="toggleMute(<%= !currentVoice.muted %>)">
+          <%= currentVoice.muted ? 'Unmute' : 'Mute' %>
+        </button>
+        <button class="btn btn-<%= currentVoice.deafened ? 'success' : 'secondary' %>" onclick="toggleDeafen(<%= !currentVoice.deafened %>)">
+          <%= currentVoice.deafened ? 'Undeafen' : 'Deafen' %>
+        </button>
+      </div>
+    </div>
+    <% } %>
+
+    <div class="card">
+      <div class="card-header">🔊 Available Voice Channels (<%= voiceChannels.length %>)</div>
+      
+      <div class="grid grid-2">
+        <% voiceChannels.forEach(vc => { %>
+        <div class="card">
+          <h4>🔊 <%= vc.name %></h4>
+          <p style="color: var(--text-secondary);">
+            Server: <%= vc.guildName %><br>
+            Members: <%= vc.members %><% if (vc.userLimit > 0) { %>/<%= vc.userLimit %><% } %><br>
+            Type: <%= vc.type %>
+          </p>
+          <button class="btn btn-primary btn-sm" onclick="joinVoice('<%= vc.id %>')">Join</button>
+        </div>
+        <% }); %>
+      </div>
+      
+      <% if (voiceChannels.length === 0) { %>
+      <p class="text-center" style="color: var(--text-muted); padding: 40px;">
+        No voice channels available.
+      </p>
+      <% } %>
+    </div>
+
+    <div class="alert alert-info">
+      ℹ️ <strong>Note:</strong> Voice channel support is limited in selfbots. You can join channels but audio streaming may not work properly.
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

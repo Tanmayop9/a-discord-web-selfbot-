@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Direct Messages - Discord Web Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/servers">Servers</a></li>
+        <li><a href="/dms">DMs</a></li>
+        <li><a href="/friends">Friends</a></li>
+        <li><a href="/voice">Voice</a></li>
+      </ul>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-header">💬 Direct Messages (<%= dms.length %>)</div>
+      
+      <div class="grid grid-2">
+        <% dms.forEach(dm => { %>
+        <div class="dm-card" onclick="location.href='/channel/dm/<%= dm.id %>'">
+          <img src="<%= dm.recipientAvatar || dm.icon %>" alt="<%= dm.recipient || dm.name %>" class="dm-avatar">
+          <div class="dm-info">
+            <div class="dm-name"><%= dm.recipient || dm.name %></div>
+            <% if (dm.recipients) { %>
+            <div class="dm-meta"><%= dm.recipients %></div>
+            <% } %>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+      
+      <% if (dms.length === 0) { %>
+      <p class="text-center" style="color: var(--text-muted); padding: 40px;">
+        No direct messages yet.
+      </p>
+      <% } %>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

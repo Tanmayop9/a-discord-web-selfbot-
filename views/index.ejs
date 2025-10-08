@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discord Web Selfbot - Dashboard</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/servers">Servers</a></li>
+        <li><a href="/dms">DMs</a></li>
+        <li><a href="/friends">Friends</a></li>
+        <li><a href="/voice">Voice</a></li>
+        <li><a href="/settings">Settings</a></li>
+        <li><a href="/user-info">Profile</a></li>
+      </ul>
+      <% if (botReady && user) { %>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+        <span class="status-indicator status-<%= status %>"></span>
+      </div>
+      <% } %>
+    </div>
+  </nav>
+
+  <div class="container">
+    <% if (!botReady) { %>
+    <div class="alert alert-warning">
+      ⚠️ Bot is not ready yet. Please wait for the connection to establish...
+    </div>
+    <% } else { %>
+    
+    <div class="card">
+      <div class="card-header">📊 Dashboard</div>
+      
+      <div class="grid grid-3">
+        <div class="card">
+          <h3>🏰 Servers</h3>
+          <p class="text-center" style="font-size: 2rem; color: var(--accent);"><%= user.client.guilds.cache.size %></p>
+        </div>
+        
+        <div class="card">
+          <h3>👥 Friends</h3>
+          <p class="text-center" style="font-size: 2rem; color: var(--success);"><%= user.client.relationships?.cache?.filter(r => r.type === 'FRIEND').size || 0 %></p>
+        </div>
+        
+        <div class="card">
+          <h3>💬 DMs</h3>
+          <p class="text-center" style="font-size: 2rem; color: var(--warning);"><%= user.client.channels.cache.filter(c => c.type === 'DM').size %></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">👤 User Status</div>
+      
+      <div class="form-group">
+        <label class="form-label">Online Status</label>
+        <div class="flex gap-1">
+          <button class="btn btn-success btn-sm" onclick="updateStatus('online')">Online</button>
+          <button class="btn btn-warning btn-sm" onclick="updateStatus('idle')">Idle</button>
+          <button class="btn btn-danger btn-sm" onclick="updateStatus('dnd')">DND</button>
+          <button class="btn btn-secondary btn-sm" onclick="updateStatus('invisible')">Invisible</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">✨ Custom Status</div>
+      
+      <form onsubmit="event.preventDefault(); updateCustomStatusForm();">
+        <div class="form-group">
+          <label class="form-label">Emoji (optional)</label>
+          <input type="text" class="form-control" id="statusEmoji" placeholder="😊">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Status Text</label>
+          <input type="text" class="form-control" id="statusText" placeholder="Playing games...">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Clear After (optional)</label>
+          <select class="form-control" id="statusExpiry">
+            <option value="">Never</option>
+            <option value="30">30 minutes</option>
+            <option value="60">1 hour</option>
+            <option value="240">4 hours</option>
+            <option value="1440">Today</option>
+          </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Update Custom Status</button>
+        <button type="button" class="btn btn-secondary" onclick="clearActivities()">Clear Status</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header">🎮 Rich Presence (RPC)</div>
+      
+      <form onsubmit="event.preventDefault(); updateRPCForm();">
+        <div class="form-group">
+          <label class="form-label">Activity Name</label>
+          <input type="text" class="form-control" id="rpcName" placeholder="My Custom Game">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Details</label>
+          <input type="text" class="form-control" id="rpcDetails" placeholder="Playing ranked">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">State</label>
+          <input type="text" class="form-control" id="rpcState" placeholder="In a match">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Application ID</label>
+          <input type="text" class="form-control" id="rpcAppId" placeholder="123456789012345678">
+        </div>
+        
+        <div class="grid grid-2">
+          <div class="form-group">
+            <label class="form-label">Large Image</label>
+            <input type="text" class="form-control" id="rpcLargeImage" placeholder="Image key or URL">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Large Image Text</label>
+            <input type="text" class="form-control" id="rpcLargeText" placeholder="Hover text">
+          </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Update Rich Presence</button>
+        <button type="button" class="btn btn-secondary" onclick="clearActivities()">Clear RPC</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header">ℹ️ Account Information</div>
+      
+      <table class="table">
+        <tr>
+          <td><strong>Username:</strong></td>
+          <td><%= user.tag %></td>
+        </tr>
+        <tr>
+          <td><strong>User ID:</strong></td>
+          <td><%= user.id %></td>
+        </tr>
+        <tr>
+          <td><strong>Nitro:</strong></td>
+          <td><%= user.nitroType || 'None' %></td>
+        </tr>
+        <tr>
+          <td><strong>Email:</strong></td>
+          <td><%= user.email || 'Not available' %></td>
+        </tr>
+        <tr>
+          <td><strong>Verified:</strong></td>
+          <td><%= user.verified ? '✅ Yes' : '❌ No' %></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="alert alert-warning">
+      ⚠️ <strong>Warning:</strong> Using selfbots violates Discord's Terms of Service. This tool is for educational purposes only. Use at your own risk!
+    </div>
+
+    <% } %>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    function updateCustomStatusForm() {
+      const emoji = document.getElementById('statusEmoji').value;
+      const text = document.getElementById('statusText').value;
+      const expiry = document.getElementById('statusExpiry').value;
+      
+      let expiresAt = null;
+      if (expiry) {
+        expiresAt = new Date(Date.now() + parseInt(expiry) * 60000).toISOString();
+      }
+      
+      updateCustomStatus(emoji, text, expiresAt);
+    }
+    
+    function updateRPCForm() {
+      const data = {
+        name: document.getElementById('rpcName').value,
+        details: document.getElementById('rpcDetails').value,
+        state: document.getElementById('rpcState').value,
+        appId: document.getElementById('rpcAppId').value,
+        largeImage: document.getElementById('rpcLargeImage').value,
+        largeText: document.getElementById('rpcLargeText').value
+      };
+      
+      updateRPC(data);
+    }
+  </script>
+</body>
+</html>
