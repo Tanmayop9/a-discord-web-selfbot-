@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Message Sniper - Discord Web Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/sniper">🎯 Sniper</a></li>
+        <li><a href="/analytics">📊 Analytics</a></li>
+      </ul>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('deleted-tab')">Deleted Messages (<%= deletedMessages.length %>)</div>
+      <div class="tab" onclick="switchTab('edited-tab')">Edited Messages (<%= editedMessages.length %>)</div>
+    </div>
+
+    <div id="deleted-tab" class="tab-content active">
+      <div class="card">
+        <div class="card-header">🗑️ Deleted Messages (Last 100)</div>
+        
+        <div class="message-list">
+          <% deletedMessages.forEach(msg => { %>
+          <div class="card" style="margin-bottom: 10px; padding: 15px; border-left: 4px solid var(--danger);">
+            <div class="flex-between">
+              <div style="flex: 1;">
+                <strong><%= msg.author %></strong>
+                <span style="color: var(--text-muted); margin-left: 10px; font-size: 0.9rem;">
+                  <%= new Date(msg.timestamp).toLocaleString() %>
+                </span>
+              </div>
+            </div>
+            <p style="margin-top: 10px; color: var(--text-primary);">
+              <%= msg.content || '(No content)' %>
+            </p>
+            <% if (msg.attachments && msg.attachments.length > 0) { %>
+            <div style="margin-top: 10px;">
+              <% msg.attachments.forEach(att => { %>
+              <a href="<%= att.url %>" target="_blank" class="btn btn-sm btn-secondary">
+                📎 <%= att.name %>
+              </a>
+              <% }); %>
+            </div>
+            <% } %>
+          </div>
+          <% }); %>
+        </div>
+        
+        <% if (deletedMessages.length === 0) { %>
+        <p class="text-center" style="color: var(--text-muted); padding: 40px;">
+          No deleted messages captured yet.
+        </p>
+        <% } %>
+      </div>
+    </div>
+
+    <div id="edited-tab" class="tab-content">
+      <div class="card">
+        <div class="card-header">✏️ Edited Messages (Last 100)</div>
+        
+        <div class="message-list">
+          <% editedMessages.forEach(msg => { %>
+          <div class="card" style="margin-bottom: 10px; padding: 15px; border-left: 4px solid var(--warning);">
+            <div class="flex-between">
+              <div style="flex: 1;">
+                <strong><%= msg.author %></strong>
+                <span style="color: var(--text-muted); margin-left: 10px; font-size: 0.9rem;">
+                  <%= new Date(msg.timestamp).toLocaleString() %>
+                </span>
+              </div>
+            </div>
+            <div style="margin-top: 10px;">
+              <p style="color: var(--text-muted); text-decoration: line-through;">
+                <%= msg.oldContent || '(No content)' %>
+              </p>
+              <p style="color: var(--text-primary); margin-top: 5px;">
+                <%= msg.newContent || '(No content)' %>
+              </p>
+            </div>
+          </div>
+          <% }); %>
+        </div>
+        
+        <% if (editedMessages.length === 0) { %>
+        <p class="text-center" style="color: var(--text-muted); padding: 40px;">
+          No edited messages captured yet.
+        </p>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="alert alert-info">
+      ℹ️ <strong>Message Sniper</strong> automatically captures deleted and edited messages. 
+      The last 100 of each are stored in memory.
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

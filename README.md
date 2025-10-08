@@ -16,6 +16,20 @@ A comprehensive web-based dashboard for Discord selfbots using discord.js-selfbo
 - 🔊 **Voice Channels**: Join/leave voice channels with mute/deafen controls
 - 📝 **Direct Messages**: Access and manage DMs and group DMs
 
+### Ultra Advanced Features
+- 📊 **Analytics Dashboard**: Comprehensive message statistics and activity tracking
+- 🤖 **Auto-Responder System**: Create automated responses with custom triggers and match types
+- ⏰ **Message Scheduler**: Schedule messages for future delivery with date/time picker
+- 🌙 **AFK Mode**: Automatically respond to mentions when away with custom messages
+- 🎯 **Message Sniper**: Capture and view deleted/edited messages in real-time
+- ⚡ **Custom Commands**: Create command shortcuts that auto-delete and replace with responses
+- 🎨 **Advanced Embed Builder**: Visual embed creator with live preview
+- 📬 **Mass DM System**: Send bulk DMs with rate limiting protection
+- 🔐 **Token Checker**: Validate and check Discord token information
+- ⚔️ **Slash Commands Viewer**: View all available application commands
+- 📜 **Activity Logger**: Comprehensive logging of all Discord interactions
+- 🔄 **Real-time Updates**: Live message tracking and WebSocket notifications
+
 ### Advanced Features
 - ✨ **Custom Status**: Set custom status with emoji and expiration
 - 🎮 **Rich Presence (RPC)**: Create custom Rich Presence activities
@@ -186,6 +200,21 @@ The main dashboard shows:
 - `/voice` - Voice channels
 - `/user-info` - User profile
 - `/settings` - User settings
+
+### Ultra Advanced Routes
+- `/analytics` - Analytics dashboard with message statistics
+- `/auto-responder` - Auto-responder management
+- `/scheduler` - Message scheduler
+- `/afk` - AFK mode configuration
+- `/sniper` - Deleted/edited message viewer
+- `/custom-commands` - Custom command shortcuts
+- `/embed-builder` - Visual embed creator
+- `/mass-dm` - Mass DM sender
+- `/token-checker` - Token validator
+- `/slash-commands` - Slash commands viewer
+- `/activity-logs` - Activity logger
+
+### Classic Routes
 - `/invites` - Server invites
 - `/applications` - User applications
 - `/billing` - Billing information
@@ -203,6 +232,23 @@ The main dashboard shows:
 - `POST /update-rpc` - Update Rich Presence
 - `POST /update-spotify` - Update Spotify RPC
 - `POST /clear-activities` - Clear all activities
+
+### Ultra Advanced API Endpoints
+- `POST /auto-responder/add` - Add auto-responder
+- `POST /auto-responder/toggle` - Toggle auto-responder
+- `POST /auto-responder/delete` - Delete auto-responder
+- `POST /scheduler/add` - Schedule message
+- `POST /scheduler/delete` - Cancel scheduled message
+- `POST /afk/toggle` - Toggle AFK mode
+- `POST /custom-commands/add` - Add custom command
+- `POST /custom-commands/delete` - Delete custom command
+- `POST /embed-builder/send` - Send custom embed
+- `POST /mass-dm/send` - Send mass DM
+- `POST /token-checker/validate` - Validate token
+- `POST /activity-logs/clear` - Clear activity logs
+- `GET /backup/:guildId` - Backup server structure
+
+### Classic API Endpoints
 - `POST /send-friend-request` - Send friend request
 - `POST /accept-friend-request` - Accept friend request
 - `POST /remove-friend` - Remove friend

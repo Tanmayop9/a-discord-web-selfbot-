@@ -17,6 +17,11 @@
         <li><a href="/dms">DMs</a></li>
         <li><a href="/friends">Friends</a></li>
         <li><a href="/voice">Voice</a></li>
+        <li><a href="/analytics">📊 Analytics</a></li>
+        <li><a href="/auto-responder">🤖 Auto-Responder</a></li>
+        <li><a href="/scheduler">⏰ Scheduler</a></li>
+        <li><a href="/sniper">🎯 Sniper</a></li>
+        <li><a href="/embed-builder">🎨 Embed Builder</a></li>
         <li><a href="/settings">Settings</a></li>
         <li><a href="/user-info">Profile</a></li>
       </ul>
@@ -55,6 +60,67 @@
           <h3>💬 DMs</h3>
           <p class="text-center" style="font-size: 2rem; color: var(--warning);"><%= user.client.channels.cache.filter(c => c.type === 'DM').size %></p>
         </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">⚡ Ultra Advanced Features</div>
+      
+      <div class="grid grid-4">
+        <a href="/analytics" class="card" style="text-decoration: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+          <h3 style="color: white;">📊 Analytics</h3>
+          <p style="color: white;">Message stats & activity tracking</p>
+        </a>
+        
+        <a href="/auto-responder" class="card" style="text-decoration: none; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+          <h3 style="color: white;">🤖 Auto-Responder</h3>
+          <p style="color: white;">Automated message responses</p>
+        </a>
+        
+        <a href="/scheduler" class="card" style="text-decoration: none; background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+          <h3 style="color: white;">⏰ Scheduler</h3>
+          <p style="color: white;">Schedule messages for later</p>
+        </a>
+        
+        <a href="/afk" class="card" style="text-decoration: none; background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);">
+          <h3 style="color: white;">🌙 AFK Mode</h3>
+          <p style="color: white;">Auto-respond when away</p>
+        </a>
+        
+        <a href="/sniper" class="card" style="text-decoration: none; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+          <h3 style="color: white;">🎯 Message Sniper</h3>
+          <p style="color: white;">Track deleted/edited messages</p>
+        </a>
+        
+        <a href="/custom-commands" class="card" style="text-decoration: none; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+          <h3 style="color: white;">⚡ Custom Commands</h3>
+          <p style="color: white;">Create command shortcuts</p>
+        </a>
+        
+        <a href="/embed-builder" class="card" style="text-decoration: none; background: linear-gradient(135deg, #fa8bff 0%, #2bd2ff 90%, #2bff88 100%);">
+          <h3 style="color: white;">🎨 Embed Builder</h3>
+          <p style="color: white;">Visual embed creator</p>
+        </a>
+        
+        <a href="/mass-dm" class="card" style="text-decoration: none; background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);">
+          <h3 style="color: white;">📬 Mass DM</h3>
+          <p style="color: white;">Bulk direct messaging</p>
+        </a>
+        
+        <a href="/token-checker" class="card" style="text-decoration: none; background: linear-gradient(135deg, #fddb92 0%, #d1fdff 100%);">
+          <h3 style="color: #333;">🔐 Token Checker</h3>
+          <p style="color: #333;">Validate Discord tokens</p>
+        </a>
+        
+        <a href="/slash-commands" class="card" style="text-decoration: none; background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+          <h3 style="color: #333;">⚔️ Slash Commands</h3>
+          <p style="color: #333;">View available commands</p>
+        </a>
+        
+        <a href="/activity-logs" class="card" style="text-decoration: none; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
+          <h3 style="color: #333;">📜 Activity Logs</h3>
+          <p style="color: #333;">Comprehensive logging</p>
+        </a>
       </div>
     </div>
 

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Embed Builder - Discord Web Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/embed-builder">🎨 Embed Builder</a></li>
+      </ul>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="grid grid-2">
+      <div>
+        <div class="card">
+          <div class="card-header">🎨 Build Your Embed</div>
+          
+          <div class="form-group">
+            <label class="form-label">Channel</label>
+            <select class="form-control" id="channelId" required>
+              <option value="">Select a channel...</option>
+              <% channels.forEach(ch => { %>
+              <option value="<%= ch.id %>"><%= ch.guildName %> - <%= ch.name %></option>
+              <% }); %>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Title</label>
+            <input type="text" class="form-control" id="title" placeholder="Embed Title">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea class="form-control" id="description" rows="4" placeholder="Embed description..."></textarea>
+          </div>
+          
+          <div class="grid grid-2">
+            <div class="form-group">
+              <label class="form-label">Color (Hex)</label>
+              <input type="color" id="color" value="#5865f2">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Timestamp</label>
+              <select class="form-control" id="timestamp">
+                <option value="">None</option>
+                <option value="now">Current Time</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Footer Text</label>
+            <input type="text" class="form-control" id="footer" placeholder="Footer text">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Author Name</label>
+            <input type="text" class="form-control" id="authorName" placeholder="Author name">
+          </div>
+          
+          <div class="grid grid-2">
+            <div class="form-group">
+              <label class="form-label">Thumbnail URL</label>
+              <input type="url" class="form-control" id="thumbnail" placeholder="https://...">
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">Image URL</label>
+              <input type="url" class="form-control" id="image" placeholder="https://...">
+            </div>
+          </div>
+          
+          <button class="btn btn-primary" onclick="buildEmbed()">Send Embed</button>
+        </div>
+      </div>
+      
+      <div>
+        <div class="card">
+          <div class="card-header">👁️ Preview</div>
+          
+          <div id="embedPreview" style="background: var(--bg-tertiary); padding: 15px; border-radius: 8px; min-height: 300px;">
+            <p style="color: var(--text-muted); text-align: center; padding: 40px;">
+              Configure your embed to see a preview
+            </p>
+          </div>
+        </div>
+        
+        <div class="alert alert-info mt-2">
+          ℹ️ <strong>Tip:</strong> You can use markdown in the description for **bold**, *italic*, and more!
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    function updatePreview() {
+      const title = document.getElementById('title').value;
+      const description = document.getElementById('description').value;
+      const color = document.getElementById('color').value;
+      const footer = document.getElementById('footer').value;
+      const authorName = document.getElementById('authorName').value;
+      const thumbnail = document.getElementById('thumbnail').value;
+      const image = document.getElementById('image').value;
+      
+      if (!title && !description) {
+        document.getElementById('embedPreview').innerHTML = `
+          <p style="color: var(--text-muted); text-align: center; padding: 40px;">
+            Configure your embed to see a preview
+          </p>
+        `;
+        return;
+      }
+      
+      let preview = `<div style="border-left: 4px solid ${color}; padding-left: 12px;">`;
+      
+      if (authorName) {
+        preview += `<div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 8px;">${authorName}</div>`;
+      }
+      
+      if (title) {
+        preview += `<div style="font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; color: var(--text-primary);">${title}</div>`;
+      }
+      
+      if (description) {
+        preview += `<div style="color: var(--text-secondary); margin-bottom: 8px;">${description}</div>`;
+      }
+      
+      if (thumbnail) {
+        preview += `<img src="${thumbnail}" style="max-width: 80px; border-radius: 4px; margin-top: 8px;">`;
+      }
+      
+      if (image) {
+        preview += `<img src="${image}" style="max-width: 100%; border-radius: 4px; margin-top: 8px;">`;
+      }
+      
+      if (footer) {
+        preview += `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;">${footer}</div>`;
+      }
+      
+      preview += `</div>`;
+      
+      document.getElementById('embedPreview').innerHTML = preview;
+    }
+    
+    // Update preview on input
+    ['title', 'description', 'color', 'footer', 'authorName', 'thumbnail', 'image'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updatePreview);
+    });
+    
+    async function buildEmbed() {
+      const channelId = document.getElementById('channelId').value;
+      if (!channelId) {
+        showNotification('Please select a channel', 'warning');
+        return;
+      }
+      
+      const embedData = {
+        title: document.getElementById('title').value || undefined,
+        description: document.getElementById('description').value || undefined,
+        color: parseInt(document.getElementById('color').value.replace('#', ''), 16),
+        footer: document.getElementById('footer').value ? { text: document.getElementById('footer').value } : undefined,
+        author: document.getElementById('authorName').value ? { name: document.getElementById('authorName').value } : undefined,
+        thumbnail: document.getElementById('thumbnail').value ? { url: document.getElementById('thumbnail').value } : undefined,
+        image: document.getElementById('image').value ? { url: document.getElementById('image').value } : undefined,
+        timestamp: document.getElementById('timestamp').value === 'now' ? new Date().toISOString() : undefined
+      };
+      
+      try {
+        await apiCall('/embed-builder/send', 'POST', { 
+          channelId, 
+          embedData: JSON.stringify(embedData) 
+        });
+        showNotification('Embed sent!', 'success');
+      } catch (error) {
+        // Error already shown
+      }
+    }
+  </script>
+</body>
+</html>

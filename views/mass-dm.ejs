@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mass DM - Discord Web Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/mass-dm">📬 Mass DM</a></li>
+      </ul>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="alert alert-danger">
+      ⚠️ <strong>Warning:</strong> Mass DMing can get your account banned! Use with extreme caution and respect Discord's rate limits.
+    </div>
+
+    <div class="card">
+      <div class="card-header">📬 Mass DM</div>
+      
+      <form onsubmit="event.preventDefault(); sendMassDM();">
+        <div class="form-group">
+          <label class="form-label">Select Friends</label>
+          <div style="max-height: 300px; overflow-y: auto; border: 1px solid var(--bg-hover); border-radius: 4px; padding: 10px;">
+            <% friends.forEach(friend => { %>
+            <label style="display: flex; align-items: center; padding: 8px; cursor: pointer;" class="friend-checkbox">
+              <input type="checkbox" name="userIds" value="<%= friend.id %>" style="margin-right: 10px;">
+              <img src="<%= friend.avatar %>" style="width: 32px; height: 32px; border-radius: 50%; margin-right: 10px;">
+              <span><%= friend.username %></span>
+            </label>
+            <% }); %>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Message</label>
+          <textarea class="form-control" id="message" rows="4" placeholder="Your message..." required></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Delay Between Messages (ms)</label>
+          <input type="number" class="form-control" id="delay" value="2000" min="1000" max="10000" required>
+          <small style="color: var(--text-muted);">Recommended: 2000ms or higher to avoid rate limits</small>
+        </div>
+        
+        <button type="submit" class="btn btn-danger" id="sendBtn">Send Mass DM</button>
+      </form>
+    </div>
+
+    <div id="progressCard" class="card" style="display: none;">
+      <div class="card-header">📊 Progress</div>
+      <div id="progressText" style="padding: 20px; text-align: center;"></div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    async function sendMassDM() {
+      const checkboxes = document.querySelectorAll('input[name="userIds"]:checked');
+      const message = document.getElementById('message').value;
+      const delay = document.getElementById('delay').value;
+      
+      if (checkboxes.length === 0) {
+        showNotification('Please select at least one friend', 'warning');
+        return;
+      }
+      
+      if (!confirm(`Send DM to ${checkboxes.length} friend(s)? This may take a while.`)) {
+        return;
+      }
+      
+      const userIds = Array.from(checkboxes).map(cb => cb.value);
+      document.getElementById('sendBtn').disabled = true;
+      document.getElementById('progressCard').style.display = 'block';
+      document.getElementById('progressText').innerHTML = `Sending to ${userIds.length} users...<br><div class="spinner" style="margin: 20px auto;"></div>`;
+      
+      try {
+        const result = await apiCall('/mass-dm/send', 'POST', { userIds, message, delay });
+        document.getElementById('progressText').innerHTML = `
+          <div style="color: var(--success);">✅ Completed!</div>
+          <div style="margin-top: 10px;">Sent: ${result.sent}</div>
+          <div>Failed: ${result.failed}</div>
+        `;
+        showNotification(`Mass DM complete! Sent: ${result.sent}, Failed: ${result.failed}`, 'success');
+      } catch (error) {
+        document.getElementById('progressText').innerHTML = `<div style="color: var(--danger);">❌ Error: ${error.message}</div>`;
+      } finally {
+        document.getElementById('sendBtn').disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

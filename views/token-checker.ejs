@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Token Checker - Discord Web Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/token-checker">🔐 Token Checker</a></li>
+      </ul>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="alert alert-warning">
+      ⚠️ <strong>Security Warning:</strong> Never share your Discord tokens! This tool validates tokens locally.
+    </div>
+
+    <div class="card">
+      <div class="card-header">🔐 Token Validator</div>
+      
+      <form onsubmit="event.preventDefault(); validateToken();">
+        <div class="form-group">
+          <label class="form-label">Discord Token</label>
+          <textarea class="form-control" id="token" rows="3" placeholder="Paste Discord token here..." required></textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" id="validateBtn">Validate Token</button>
+      </form>
+    </div>
+
+    <div id="resultCard" class="card" style="display: none;">
+      <div class="card-header">📊 Validation Result</div>
+      <div id="resultContent"></div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    async function validateToken() {
+      const token = document.getElementById('token').value.trim();
+      
+      if (!token) {
+        showNotification('Please enter a token', 'warning');
+        return;
+      }
+      
+      document.getElementById('validateBtn').disabled = true;
+      document.getElementById('validateBtn').innerHTML = 'Validating...';
+      document.getElementById('resultCard').style.display = 'block';
+      document.getElementById('resultContent').innerHTML = '<div class="spinner" style="margin: 20px auto;"></div>';
+      
+      try {
+        const result = await apiCall('/token-checker/validate', 'POST', { token });
+        
+        if (result.valid) {
+          document.getElementById('resultContent').innerHTML = `
+            <div class="alert alert-success">✅ Token is <strong>VALID</strong></div>
+            <table class="table">
+              <tr>
+                <td><strong>Username:</strong></td>
+                <td>${result.username}</td>
+              </tr>
+              <tr>
+                <td><strong>User ID:</strong></td>
+                <td>${result.userId}</td>
+              </tr>
+              <tr>
+                <td><strong>Nitro:</strong></td>
+                <td>${result.nitro}</td>
+              </tr>
+              <tr>
+                <td><strong>Verified:</strong></td>
+                <td>${result.verified ? '✅ Yes' : '❌ No'}</td>
+              </tr>
+            </table>
+            <div style="text-align: center; margin-top: 20px;">
+              <img src="${result.avatar}" style="width: 100px; height: 100px; border-radius: 50%;">
+            </div>
+          `;
+          showNotification('Token is valid!', 'success');
+        } else {
+          document.getElementById('resultContent').innerHTML = `
+            <div class="alert alert-danger">❌ Token is <strong>INVALID</strong></div>
+            <p style="color: var(--text-secondary); padding: 20px;">
+              Error: ${result.error || 'Unknown error'}
+            </p>
+          `;
+          showNotification('Token is invalid', 'danger');
+        }
+      } catch (error) {
+        document.getElementById('resultContent').innerHTML = `
+          <div class="alert alert-danger">❌ Validation failed</div>
+          <p style="color: var(--text-secondary); padding: 20px;">
+            Error: ${error.message}
+          </p>
+        `;
+      } finally {
+        document.getElementById('validateBtn').disabled = false;
+        document.getElementById('validateBtn').innerHTML = 'Validate Token';
+      }
+    }
+  </script>
+</body>
+</html>

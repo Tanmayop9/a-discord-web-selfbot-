@@ -46,6 +46,23 @@ let userServers = [];
 let currentStatus = 'online';
 let currentActivities = [];
 
+// Advanced features storage
+let autoResponders = [];
+let scheduledMessages = [];
+let afkMode = { enabled: false, message: '', since: null };
+let deletedMessages = [];
+let editedMessages = [];
+let customCommands = [];
+let messageStats = {
+  sent: 0,
+  received: 0,
+  deleted: 0,
+  edited: 0,
+  channels: {},
+  servers: {}
+};
+let activityLogs = [];
+
 // Socket.IO for real-time updates
 io.on('connection', (socket) => {
   console.log('Client connected to WebSocket');
@@ -56,7 +73,78 @@ io.on('connection', (socket) => {
 });
 
 // Broadcast new messages to all connected clients
-client.on('messageCreate', (message) => {
+client.on('messageCreate', async (message) => {
+  // Update message stats
+  if (message.author.id === client.user.id) {
+    messageStats.sent++;
+  } else {
+    messageStats.received++;
+  }
+  
+  // Track per-channel stats
+  if (!messageStats.channels[message.channel.id]) {
+    messageStats.channels[message.channel.id] = { sent: 0, received: 0 };
+  }
+  if (message.author.id === client.user.id) {
+    messageStats.channels[message.channel.id].sent++;
+  } else {
+    messageStats.channels[message.channel.id].received++;
+  }
+  
+  // Auto-responder logic
+  if (message.author.id !== client.user.id) {
+    autoResponders.forEach(async (responder) => {
+      if (responder.enabled) {
+        const content = message.content.toLowerCase();
+        const trigger = responder.trigger.toLowerCase();
+        
+        if ((responder.matchType === 'exact' && content === trigger) ||
+            (responder.matchType === 'contains' && content.includes(trigger)) ||
+            (responder.matchType === 'startsWith' && content.startsWith(trigger))) {
+          try {
+            await message.channel.send(responder.response);
+          } catch (err) {
+            console.error('Auto-responder error:', err.message);
+          }
+        }
+      }
+    });
+  }
+  
+  // AFK mode auto-response
+  if (afkMode.enabled && message.mentions.has(client.user)) {
+    try {
+      const afkDuration = Math.floor((Date.now() - afkMode.since) / 1000 / 60);
+      await message.channel.send(`🌙 I'm currently AFK: ${afkMode.message} (${afkDuration} minutes ago)`);
+    } catch (err) {
+      console.error('AFK response error:', err.message);
+    }
+  }
+  
+  // Custom commands
+  if (message.author.id === client.user.id) {
+    customCommands.forEach(async (cmd) => {
+      if (message.content.startsWith(cmd.trigger)) {
+        try {
+          await message.delete();
+          await message.channel.send(cmd.response);
+        } catch (err) {
+          console.error('Custom command error:', err.message);
+        }
+      }
+    });
+  }
+  
+  // Log activity
+  activityLogs.unshift({
+    type: 'message',
+    timestamp: Date.now(),
+    channelId: message.channel.id,
+    authorId: message.author.id,
+    content: message.content.substring(0, 100)
+  });
+  if (activityLogs.length > 1000) activityLogs.pop();
+  
   io.emit('newMessage', {
     channelId: message.channel.id,
     messageData: {
@@ -74,6 +162,46 @@ client.on('messageCreate', (message) => {
       })),
       embeds: message.embeds
     }
+  });
+});
+
+// Message delete tracking
+client.on('messageDelete', (message) => {
+  messageStats.deleted++;
+  deletedMessages.unshift({
+    id: message.id,
+    content: message.content,
+    author: message.author.tag,
+    authorId: message.author.id,
+    channelId: message.channel.id,
+    timestamp: Date.now(),
+    attachments: message.attachments.map(a => ({ url: a.url, name: a.name }))
+  });
+  if (deletedMessages.length > 100) deletedMessages.pop();
+  
+  io.emit('messageDeleted', {
+    messageId: message.id,
+    channelId: message.channel.id
+  });
+});
+
+// Message edit tracking
+client.on('messageUpdate', (oldMessage, newMessage) => {
+  messageStats.edited++;
+  editedMessages.unshift({
+    id: newMessage.id,
+    oldContent: oldMessage.content,
+    newContent: newMessage.content,
+    author: newMessage.author.tag,
+    channelId: newMessage.channel.id,
+    timestamp: Date.now()
+  });
+  if (editedMessages.length > 100) editedMessages.pop();
+  
+  io.emit('messageEdited', {
+    messageId: newMessage.id,
+    channelId: newMessage.channel.id,
+    newContent: newMessage.content
   });
 });
 
@@ -1049,6 +1177,447 @@ app.post('/set-note', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// ========== ULTRA ADVANCED FEATURES ==========
+
+// Analytics Dashboard
+app.get('/analytics', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  const topChannels = Object.entries(messageStats.channels)
+    .sort((a, b) => (b[1].sent + b[1].received) - (a[1].sent + a[1].received))
+    .slice(0, 10)
+    .map(([channelId, stats]) => {
+      const channel = client.channels.cache.get(channelId);
+      return {
+        channelId,
+        channelName: channel ? channel.name : 'Unknown',
+        ...stats,
+        total: stats.sent + stats.received
+      };
+    });
+  
+  res.render('analytics', { 
+    stats: messageStats,
+    topChannels,
+    activityLogs: activityLogs.slice(0, 50),
+    user: client.user 
+  });
+});
+
+// Auto-Responder Management
+app.get('/auto-responder', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  res.render('auto-responder', { 
+    autoResponders,
+    user: client.user 
+  });
+});
+
+app.post('/auto-responder/add', async (req, res) => {
+  const { trigger, response, matchType } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  autoResponders.push({
+    id: Date.now(),
+    trigger,
+    response,
+    matchType: matchType || 'contains',
+    enabled: true,
+    created: Date.now()
+  });
+  
+  res.json({ success: true });
+});
+
+app.post('/auto-responder/toggle', async (req, res) => {
+  const { id } = req.body;
+  
+  const responder = autoResponders.find(r => r.id === parseInt(id));
+  if (responder) {
+    responder.enabled = !responder.enabled;
+    res.json({ success: true, enabled: responder.enabled });
+  } else {
+    res.status(404).json({ error: 'Auto-responder not found' });
+  }
+});
+
+app.post('/auto-responder/delete', async (req, res) => {
+  const { id } = req.body;
+  
+  autoResponders = autoResponders.filter(r => r.id !== parseInt(id));
+  res.json({ success: true });
+});
+
+// Message Scheduler
+app.get('/scheduler', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  res.render('scheduler', { 
+    scheduledMessages,
+    user: client.user 
+  });
+});
+
+app.post('/scheduler/add', async (req, res) => {
+  const { channelId, message, timestamp } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  const channel = client.channels.cache.get(channelId);
+  if (!channel) {
+    return res.status(404).json({ error: 'Channel not found' });
+  }
+  
+  const scheduleTime = new Date(timestamp).getTime();
+  const scheduled = {
+    id: Date.now(),
+    channelId,
+    channelName: channel.name,
+    message,
+    scheduleTime,
+    created: Date.now()
+  };
+  
+  scheduledMessages.push(scheduled);
+  
+  // Schedule the message
+  const delay = scheduleTime - Date.now();
+  if (delay > 0) {
+    setTimeout(async () => {
+      try {
+        await channel.send(message);
+        scheduledMessages = scheduledMessages.filter(m => m.id !== scheduled.id);
+      } catch (err) {
+        console.error('Scheduled message error:', err.message);
+      }
+    }, delay);
+  }
+  
+  res.json({ success: true });
+});
+
+app.post('/scheduler/delete', async (req, res) => {
+  const { id } = req.body;
+  
+  scheduledMessages = scheduledMessages.filter(m => m.id !== parseInt(id));
+  res.json({ success: true });
+});
+
+// AFK Mode
+app.get('/afk', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  res.render('afk', { 
+    afkMode,
+    user: client.user 
+  });
+});
+
+app.post('/afk/toggle', async (req, res) => {
+  const { message } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  if (afkMode.enabled) {
+    afkMode = { enabled: false, message: '', since: null };
+  } else {
+    afkMode = {
+      enabled: true,
+      message: message || 'I am AFK',
+      since: Date.now()
+    };
+  }
+  
+  res.json({ success: true, enabled: afkMode.enabled });
+});
+
+// Message Sniper (Deleted/Edited Messages)
+app.get('/sniper', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  res.render('sniper', { 
+    deletedMessages,
+    editedMessages,
+    user: client.user 
+  });
+});
+
+// Custom Commands
+app.get('/custom-commands', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  res.render('custom-commands', { 
+    customCommands,
+    user: client.user 
+  });
+});
+
+app.post('/custom-commands/add', async (req, res) => {
+  const { trigger, response } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  customCommands.push({
+    id: Date.now(),
+    trigger,
+    response,
+    created: Date.now()
+  });
+  
+  res.json({ success: true });
+});
+
+app.post('/custom-commands/delete', async (req, res) => {
+  const { id } = req.body;
+  
+  customCommands = customCommands.filter(c => c.id !== parseInt(id));
+  res.json({ success: true });
+});
+
+// Advanced Embed Builder
+app.get('/embed-builder', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  const channels = [];
+  client.guilds.cache.forEach(guild => {
+    guild.channels.cache.forEach(ch => {
+      if (ch.isText()) {
+        channels.push({
+          id: ch.id,
+          name: ch.name,
+          guildName: guild.name
+        });
+      }
+    });
+  });
+  
+  res.render('embed-builder', { 
+    channels,
+    user: client.user 
+  });
+});
+
+app.post('/embed-builder/send', async (req, res) => {
+  const { channelId, embedData } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const channel = client.channels.cache.get(channelId);
+    if (!channel) {
+      return res.status(404).json({ error: 'Channel not found' });
+    }
+    
+    const embed = JSON.parse(embedData);
+    await channel.send({ embeds: [embed] });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Mass DM
+app.get('/mass-dm', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  const friends = [];
+  if (client.relationships && client.relationships.cache) {
+    client.relationships.cache.forEach(r => {
+      if (r.type === 'FRIEND') {
+        friends.push({
+          id: r.id,
+          username: r.user.tag,
+          avatar: r.user.displayAvatarURL()
+        });
+      }
+    });
+  }
+  
+  res.render('mass-dm', { 
+    friends,
+    user: client.user 
+  });
+});
+
+app.post('/mass-dm/send', async (req, res) => {
+  const { userIds, message, delay } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  const delayMs = parseInt(delay) || 1000;
+  const ids = Array.isArray(userIds) ? userIds : [userIds];
+  
+  // Send DMs with delay to avoid rate limiting
+  let sent = 0;
+  let failed = 0;
+  
+  for (const userId of ids) {
+    try {
+      const user = await client.users.fetch(userId);
+      await user.send(message);
+      sent++;
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    } catch (err) {
+      failed++;
+      console.error(`Failed to DM ${userId}:`, err.message);
+    }
+  }
+  
+  res.json({ success: true, sent, failed });
+});
+
+// Server Backup
+app.get('/backup/:guildId', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const guild = client.guilds.cache.get(req.params.guildId);
+    if (!guild) {
+      return res.status(404).json({ error: 'Server not found' });
+    }
+    
+    const backup = {
+      name: guild.name,
+      icon: guild.iconURL(),
+      channels: guild.channels.cache.map(ch => ({
+        name: ch.name,
+        type: ch.type,
+        position: ch.position,
+        parentId: ch.parentId
+      })),
+      roles: guild.roles.cache.map(r => ({
+        name: r.name,
+        color: r.hexColor,
+        permissions: r.permissions.toArray(),
+        position: r.position
+      })),
+      emojis: guild.emojis.cache.map(e => ({
+        name: e.name,
+        url: e.url,
+        animated: e.animated
+      })),
+      timestamp: Date.now()
+    };
+    
+    res.json({ success: true, backup });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Token Checker
+app.get('/token-checker', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  res.render('token-checker', { user: client.user });
+});
+
+app.post('/token-checker/validate', async (req, res) => {
+  const { token } = req.body;
+  
+  try {
+    const testClient = new Client({ checkUpdate: false });
+    await testClient.login(token);
+    
+    const info = {
+      valid: true,
+      userId: testClient.user.id,
+      username: testClient.user.tag,
+      avatar: testClient.user.displayAvatarURL(),
+      nitro: testClient.user.nitroType || 'None',
+      verified: testClient.user.verified
+    };
+    
+    await testClient.destroy();
+    res.json(info);
+  } catch (error) {
+    res.json({ valid: false, error: error.message });
+  }
+});
+
+// Slash Commands Viewer
+app.get('/slash-commands', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  const commands = [];
+  
+  try {
+    for (const guild of client.guilds.cache.values()) {
+      try {
+        const guildCommands = await guild.commands.fetch();
+        guildCommands.forEach(cmd => {
+          commands.push({
+            id: cmd.id,
+            name: cmd.name,
+            description: cmd.description,
+            guildName: guild.name,
+            guildId: guild.id
+          });
+        });
+      } catch (err) {
+        console.error(`Failed to fetch commands for ${guild.name}:`, err.message);
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching slash commands:', error.message);
+  }
+  
+  res.render('slash-commands', { commands, user: client.user });
+});
+
+// Activity Logger
+app.get('/activity-logs', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  res.render('activity-logs', { 
+    logs: activityLogs.slice(0, 100),
+    user: client.user 
+  });
+});
+
+app.post('/activity-logs/clear', async (req, res) => {
+  activityLogs = [];
+  res.json({ success: true });
 });
 
 // Discord client events
