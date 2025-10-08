@@ -39,8 +39,11 @@ A comprehensive web-based dashboard for Discord selfbots using discord.js-selfbo
 ### Prerequisites
 - Node.js 16.0.0 or higher
 - A Discord user account token
+- (Optional) Docker for containerized deployment
 
 ### Setup
+
+#### Method 1: Standard Installation
 
 1. Clone the repository:
 ```bash
@@ -77,6 +80,39 @@ npm run dev
 5. Open your browser and navigate to:
 ```
 http://localhost:10021
+```
+
+#### Method 2: Docker Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/Tanmayop9/a-discord-web-selfbot-.git
+cd a-discord-web-selfbot-
+```
+
+2. Create a `.env` file with your token:
+```
+DISCORD_TOKEN=your_discord_token_here
+```
+
+3. Run with Docker Compose:
+```bash
+docker-compose up -d
+```
+
+4. Open your browser and navigate to:
+```
+http://localhost:10021
+```
+
+To view logs:
+```bash
+docker-compose logs -f
+```
+
+To stop:
+```bash
+docker-compose down
 ```
 
 ## 🔑 Getting Your Discord Token

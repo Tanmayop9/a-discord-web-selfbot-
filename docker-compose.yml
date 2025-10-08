@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  discord-selfbot:
+    build: .
+    ports:
+      - "10021:10021"
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - PORT=10021
+    volumes:
+      - ./uploads:/tmp/uploads
+    restart: unless-stopped
+    networks:
+      - selfbot-network
+
+networks:
+  selfbot-network:
+    driver: bridge
