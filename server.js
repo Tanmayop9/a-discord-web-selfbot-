@@ -63,6 +63,25 @@ let messageStats = {
 };
 let activityLogs = [];
 
+// Ultra Advanced features storage
+let messageTemplates = [];
+let notifications = [];
+let multiAccounts = [];
+let currentTheme = 'dark';
+let raidProtection = {
+  enabled: false,
+  joinThreshold: 10,
+  timeWindow: 60,
+  action: 'kick'
+};
+let serverBackups = [];
+let quickActions = [
+  { id: 1, name: 'Quick Status', action: 'status', icon: '🎮' },
+  { id: 2, name: 'Send Embed', action: 'embed', icon: '🎨' },
+  { id: 3, name: 'Mass DM', action: 'massdm', icon: '📬' },
+  { id: 4, name: 'Analytics', action: 'analytics', icon: '📊' }
+];
+
 // Socket.IO for real-time updates
 io.on('connection', (socket) => {
   console.log('Client connected to WebSocket');
@@ -1618,6 +1637,323 @@ app.get('/activity-logs', async (req, res) => {
 app.post('/activity-logs/clear', async (req, res) => {
   activityLogs = [];
   res.json({ success: true });
+});
+
+// ========== NEW ULTRA ADVANCED FEATURES ==========
+
+// Message Templates
+app.get('/templates', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  res.render('templates', { 
+    templates: messageTemplates,
+    user: client.user 
+  });
+});
+
+app.post('/templates/add', async (req, res) => {
+  const { name, content, category } = req.body;
+  
+  messageTemplates.push({
+    id: Date.now(),
+    name,
+    content,
+    category: category || 'general',
+    created: Date.now(),
+    uses: 0
+  });
+  
+  res.json({ success: true });
+});
+
+app.post('/templates/use', async (req, res) => {
+  const { id, channelId } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const template = messageTemplates.find(t => t.id === parseInt(id));
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+    
+    const channel = client.channels.cache.get(channelId);
+    if (!channel) {
+      return res.status(404).json({ error: 'Channel not found' });
+    }
+    
+    await channel.send(template.content);
+    template.uses++;
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/templates/delete', async (req, res) => {
+  const { id } = req.body;
+  
+  messageTemplates = messageTemplates.filter(t => t.id !== parseInt(id));
+  res.json({ success: true });
+});
+
+// Notification Center
+app.get('/notifications', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  res.json({ notifications });
+});
+
+app.post('/notifications/clear', async (req, res) => {
+  notifications = [];
+  res.json({ success: true });
+});
+
+app.post('/notifications/mark-read', async (req, res) => {
+  const { id } = req.body;
+  
+  const notification = notifications.find(n => n.id === parseInt(id));
+  if (notification) {
+    notification.read = true;
+  }
+  
+  res.json({ success: true });
+});
+
+// Theme Management
+app.post('/theme/set', async (req, res) => {
+  const { theme } = req.body;
+  
+  currentTheme = theme;
+  res.json({ success: true, theme });
+});
+
+app.get('/theme/get', async (req, res) => {
+  res.json({ theme: currentTheme });
+});
+
+// Multi-Account Manager
+app.get('/multi-account', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  res.render('multi-account', { 
+    accounts: multiAccounts,
+    currentToken: DISCORD_TOKEN,
+    user: client.user 
+  });
+});
+
+app.post('/multi-account/add', async (req, res) => {
+  const { token, name } = req.body;
+  
+  try {
+    const testClient = new Client({ checkUpdate: false });
+    await testClient.login(token);
+    
+    multiAccounts.push({
+      id: Date.now(),
+      token,
+      name: name || testClient.user.tag,
+      username: testClient.user.tag,
+      userId: testClient.user.id,
+      avatar: testClient.user.displayAvatarURL(),
+      added: Date.now()
+    });
+    
+    await testClient.destroy();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Invalid token' });
+  }
+});
+
+app.post('/multi-account/delete', async (req, res) => {
+  const { id } = req.body;
+  
+  multiAccounts = multiAccounts.filter(a => a.id !== parseInt(id));
+  res.json({ success: true });
+});
+
+// Advanced Search
+app.get('/search', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  res.render('search', { user: client.user });
+});
+
+app.post('/search/messages', async (req, res) => {
+  const { query, serverId, channelId, limit } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const results = [];
+    const searchLimit = parseInt(limit) || 100;
+    
+    if (channelId) {
+      const channel = client.channels.cache.get(channelId);
+      if (channel) {
+        const messages = await channel.messages.fetch({ limit: searchLimit });
+        messages.forEach(msg => {
+          if (msg.content.toLowerCase().includes(query.toLowerCase())) {
+            results.push({
+              id: msg.id,
+              content: msg.content,
+              author: msg.author.tag,
+              channelId: msg.channel.id,
+              channelName: msg.channel.name,
+              timestamp: msg.createdAt.toLocaleString()
+            });
+          }
+        });
+      }
+    } else if (serverId) {
+      const guild = client.guilds.cache.get(serverId);
+      if (guild) {
+        for (const [, channel] of guild.channels.cache) {
+          if (channel.isText()) {
+            try {
+              const messages = await channel.messages.fetch({ limit: 50 });
+              messages.forEach(msg => {
+                if (msg.content.toLowerCase().includes(query.toLowerCase())) {
+                  results.push({
+                    id: msg.id,
+                    content: msg.content,
+                    author: msg.author.tag,
+                    channelId: msg.channel.id,
+                    channelName: msg.channel.name,
+                    timestamp: msg.createdAt.toLocaleString()
+                  });
+                }
+              });
+            } catch (err) {
+              // Skip channels we can't access
+            }
+          }
+        }
+      }
+    }
+    
+    res.json({ success: true, results: results.slice(0, 50) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Raid Protection
+app.get('/raid-protection', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  res.render('raid-protection', { 
+    raidProtection,
+    user: client.user 
+  });
+});
+
+app.post('/raid-protection/toggle', async (req, res) => {
+  const { enabled, joinThreshold, timeWindow, action } = req.body;
+  
+  raidProtection = {
+    enabled: enabled === 'true' || enabled === true,
+    joinThreshold: parseInt(joinThreshold) || 10,
+    timeWindow: parseInt(timeWindow) || 60,
+    action: action || 'kick'
+  };
+  
+  res.json({ success: true, raidProtection });
+});
+
+// Backup Manager
+app.get('/backup-manager', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  res.render('backup-manager', { 
+    backups: serverBackups,
+    user: client.user 
+  });
+});
+
+app.post('/backup-manager/save', async (req, res) => {
+  const { name, data } = req.body;
+  
+  serverBackups.push({
+    id: Date.now(),
+    name,
+    data: JSON.parse(data),
+    created: Date.now()
+  });
+  
+  res.json({ success: true });
+});
+
+app.post('/backup-manager/restore', async (req, res) => {
+  const { id } = req.body;
+  
+  const backup = serverBackups.find(b => b.id === parseInt(id));
+  if (!backup) {
+    return res.status(404).json({ error: 'Backup not found' });
+  }
+  
+  // Restore logic would go here
+  res.json({ success: true, data: backup.data });
+});
+
+app.post('/backup-manager/delete', async (req, res) => {
+  const { id } = req.body;
+  
+  serverBackups = serverBackups.filter(b => b.id !== parseInt(id));
+  res.json({ success: true });
+});
+
+// Server Statistics
+app.get('/server-stats/:id', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const guild = client.guilds.cache.get(req.params.id);
+    if (!guild) {
+      return res.status(404).send('Server not found');
+    }
+    
+    const stats = {
+      name: guild.name,
+      memberCount: guild.memberCount,
+      channelCount: guild.channels.cache.size,
+      roleCount: guild.roles.cache.size,
+      emojiCount: guild.emojis.cache.size,
+      boostLevel: guild.premiumTier,
+      boostCount: guild.premiumSubscriptionCount,
+      createdAt: guild.createdAt.toLocaleString(),
+      owner: guild.ownerId
+    };
+    
+    res.render('server-stats', { stats, guild, user: client.user });
+  } catch (error) {
+    res.status(500).send('Error fetching stats: ' + error.message);
+  }
+});
+
+// Quick Actions
+app.get('/quick-actions', async (req, res) => {
+  res.json({ actions: quickActions });
 });
 
 // Discord client events

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Account Manager - Discord Web Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/multi-account">👥 Multi-Account</a></li>
+        <li><a href="/token-checker">🔐 Token Checker</a></li>
+      </ul>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container fade-in">
+    <div class="alert alert-info">
+      ℹ️ <strong>Current Account:</strong> <%= user.tag %> (<%= user.id %>)
+    </div>
+
+    <div class="card-enhanced">
+      <div class="card-header">➕ Add Account</div>
+      
+      <form onsubmit="event.preventDefault(); addAccount();">
+        <div class="form-group">
+          <label class="form-label">Account Name (Optional)</label>
+          <input type="text" class="form-control" id="name" placeholder="My Alt Account">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Discord Token</label>
+          <textarea class="form-control" id="token" rows="3" placeholder="Paste Discord token here..." required></textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" id="addBtn">Add Account</button>
+      </form>
+    </div>
+
+    <div class="card-enhanced">
+      <div class="card-header">👥 Managed Accounts (<%= accounts.length %>)</div>
+      
+      <div class="grid grid-2">
+        <% accounts.forEach(account => { %>
+        <div class="card glass">
+          <div class="flex gap-2">
+            <img src="<%= account.avatar %>" style="width: 60px; height: 60px; border-radius: 50%;">
+            <div style="flex: 1;">
+              <h3><%= account.name %></h3>
+              <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                <%= account.username %>
+              </p>
+              <p style="color: var(--text-muted); font-size: 0.85rem;">
+                ID: <%= account.userId %>
+              </p>
+              <p style="color: var(--text-muted); font-size: 0.85rem;">
+                Added: <%= new Date(account.added).toLocaleDateString() %>
+              </p>
+            </div>
+          </div>
+          <div class="flex gap-1" style="margin-top: 15px;">
+            <button class="btn btn-sm btn-secondary" onclick="copyToken('<%= account.id %>')">Copy Token</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteAccount(<%= account.id %>)">Remove</button>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+      
+      <% if (accounts.length === 0) { %>
+      <p class="text-center" style="color: var(--text-muted); padding: 40px;">
+        No additional accounts added yet.
+      </p>
+      <% } %>
+    </div>
+
+    <div class="alert alert-warning">
+      ⚠️ <strong>Security Warning:</strong> Store tokens securely! Never share them with anyone.
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    async function addAccount() {
+      const token = document.getElementById('token').value.trim();
+      const name = document.getElementById('name').value;
+      
+      if (!token) {
+        showNotification('Please enter a token', 'warning');
+        return;
+      }
+      
+      document.getElementById('addBtn').disabled = true;
+      document.getElementById('addBtn').innerHTML = 'Validating...';
+      
+      try {
+        await apiCall('/multi-account/add', 'POST', { token, name });
+        showNotification('Account added successfully!', 'success');
+        setTimeout(() => location.reload(), 1000);
+      } catch (error) {
+        // Error already shown
+      } finally {
+        document.getElementById('addBtn').disabled = false;
+        document.getElementById('addBtn').innerHTML = 'Add Account';
+      }
+    }
+    
+    function copyToken(id) {
+      // For security, tokens are not stored in frontend
+      showNotification('Token copy not available for security', 'warning');
+    }
+    
+    async function deleteAccount(id) {
+      if (!confirm('Remove this account?')) return;
+      
+      try {
+        await apiCall('/multi-account/delete', 'POST', { id });
+        showNotification('Account removed!', 'success');
+        setTimeout(() => location.reload(), 1000);
+      } catch (error) {
+        // Error already shown
+      }
+    }
+  </script>
+</body>
+</html>

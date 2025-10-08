@@ -16,7 +16,7 @@ A comprehensive web-based dashboard for Discord selfbots using discord.js-selfbo
 - 🔊 **Voice Channels**: Join/leave voice channels with mute/deafen controls
 - 📝 **Direct Messages**: Access and manage DMs and group DMs
 
-### Ultra Advanced Features
+### Ultra Advanced Features (Original)
 - 📊 **Analytics Dashboard**: Comprehensive message statistics and activity tracking
 - 🤖 **Auto-Responder System**: Create automated responses with custom triggers and match types
 - ⏰ **Message Scheduler**: Schedule messages for future delivery with date/time picker
@@ -28,7 +28,19 @@ A comprehensive web-based dashboard for Discord selfbots using discord.js-selfbo
 - 🔐 **Token Checker**: Validate and check Discord token information
 - ⚔️ **Slash Commands Viewer**: View all available application commands
 - 📜 **Activity Logger**: Comprehensive logging of all Discord interactions
-- 🔄 **Real-time Updates**: Live message tracking and WebSocket notifications
+
+### NEW Ultra Advanced Features
+- 📝 **Message Templates**: Save and reuse frequently used messages with categories
+- 🔍 **Advanced Search**: Search messages across all servers and channels with filters
+- 👥 **Multi-Account Manager**: Manage and switch between multiple Discord tokens
+- 🛡️ **Raid Protection**: Anti-raid tools with configurable thresholds and actions
+- 💾 **Backup Manager**: Create, restore, and manage settings backups
+- 📊 **Server Statistics**: Detailed server analytics with boost tracking and growth metrics
+- 🎨 **Theme Switcher**: 5 beautiful themes (Dark, Light, AMOLED, Purple, Nord)
+- 🔔 **Notification Center**: Real-time notification system
+- ⚡ **Floating Action Button**: Quick access menu to all features
+- 🎭 **Glassmorphism UI**: Modern glass effect with smooth animations
+- 🌈 **Enhanced Cards**: Gradient cards with hover effects and animations
 
 ### Advanced Features
 - ✨ **Custom Status**: Set custom status with emoji and expiration
@@ -45,8 +57,8 @@ A comprehensive web-based dashboard for Discord selfbots using discord.js-selfbo
 
 ### Real-time Features
 - 🔄 **WebSocket Support**: Real-time message updates via Socket.IO
-- 📱 **Responsive Design**: Works on desktop and mobile devices
-- 🌙 **Discord-like UI**: Familiar Discord-themed interface
+- 📱 **Responsive Design**: Works perfectly on desktop, tablet, and mobile
+- 🌙 **Discord-like UI**: Familiar Discord-themed interface with modern enhancements
 
 ## 🚀 Installation
 

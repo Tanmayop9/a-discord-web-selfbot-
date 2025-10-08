@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Search - Discord Web Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/search">🔍 Search</a></li>
+        <li><a href="/analytics">📊 Analytics</a></li>
+      </ul>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container fade-in">
+    <div class="search-bar-enhanced">
+      <input type="text" id="searchQuery" placeholder="Search messages across Discord..." onkeypress="if(event.key==='Enter') searchMessages()">
+      <button onclick="searchMessages()">🔍</button>
+    </div>
+
+    <div class="card-enhanced">
+      <div class="card-header">🎯 Search Filters</div>
+      
+      <div class="grid grid-3">
+        <div class="form-group">
+          <label class="form-label">Server ID (Optional)</label>
+          <input type="text" class="form-control" id="serverId" placeholder="Leave empty for all">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Channel ID (Optional)</label>
+          <input type="text" class="form-control" id="channelId" placeholder="Leave empty for all">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Result Limit</label>
+          <select class="form-control" id="limit">
+            <option value="50">50 messages</option>
+            <option value="100" selected>100 messages</option>
+            <option value="200">200 messages</option>
+          </select>
+        </div>
+      </div>
+      
+      <button class="btn btn-primary" onclick="searchMessages()">🔍 Search</button>
+    </div>
+
+    <div id="resultsCard" class="card-enhanced" style="display: none;">
+      <div class="card-header">📊 Search Results</div>
+      <div id="searchResults"></div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    async function searchMessages() {
+      const query = document.getElementById('searchQuery').value.trim();
+      const serverId = document.getElementById('serverId').value.trim();
+      const channelId = document.getElementById('channelId').value.trim();
+      const limit = document.getElementById('limit').value;
+      
+      if (!query) {
+        showNotification('Please enter a search query', 'warning');
+        return;
+      }
+      
+      document.getElementById('resultsCard').style.display = 'block';
+      document.getElementById('searchResults').innerHTML = '<div class="spinner" style="margin: 20px auto;"></div>';
+      
+      try {
+        const result = await apiCall('/search/messages', 'POST', { 
+          query, 
+          serverId: serverId || undefined, 
+          channelId: channelId || undefined,
+          limit 
+        });
+        
+        if (result.results.length === 0) {
+          document.getElementById('searchResults').innerHTML = `
+            <p class="text-center" style="color: var(--text-muted); padding: 40px;">
+              No messages found matching "${query}"
+            </p>
+          `;
+          return;
+        }
+        
+        let html = `
+          <p style="color: var(--text-secondary); margin-bottom: 20px;">
+            Found ${result.results.length} message(s) matching "${query}"
+          </p>
+        `;
+        
+        result.results.forEach(msg => {
+          html += `
+            <div class="card" style="margin-bottom: 15px; padding: 15px;">
+              <div class="flex-between">
+                <strong>${msg.author}</strong>
+                <span style="color: var(--text-muted); font-size: 0.85rem;">${msg.timestamp}</span>
+              </div>
+              <p style="margin-top: 10px; color: var(--text-primary);">${msg.content}</p>
+              <div style="margin-top: 8px; font-size: 0.85rem; color: var(--text-muted);">
+                Channel: ${msg.channelName} | ID: ${msg.channelId}
+              </div>
+            </div>
+          `;
+        });
+        
+        document.getElementById('searchResults').innerHTML = html;
+        showNotification(`Found ${result.results.length} results`, 'success');
+      } catch (error) {
+        document.getElementById('searchResults').innerHTML = `
+          <p class="text-center" style="color: var(--danger); padding: 40px;">
+            Error: ${error.message}
+          </p>
+        `;
+      }
+    }
+  </script>
+</body>
+</html>

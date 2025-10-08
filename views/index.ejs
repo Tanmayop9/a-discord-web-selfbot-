@@ -121,6 +121,31 @@
           <h3 style="color: #333;">📜 Activity Logs</h3>
           <p style="color: #333;">Comprehensive logging</p>
         </a>
+        
+        <a href="/templates" class="card" style="text-decoration: none; background: linear-gradient(135deg, #ee9ca7 0%, #ffdde1 100%);">
+          <h3 style="color: #333;">📝 Templates</h3>
+          <p style="color: #333;">Message templates</p>
+        </a>
+        
+        <a href="/search" class="card" style="text-decoration: none; background: linear-gradient(135deg, #667db6 0%, #0082c8 100%);">
+          <h3 style="color: white;">🔍 Search</h3>
+          <p style="color: white;">Advanced message search</p>
+        </a>
+        
+        <a href="/multi-account" class="card" style="text-decoration: none; background: linear-gradient(135deg, #e65c00 0%, #f9d423 100%);">
+          <h3 style="color: #333;">👥 Multi-Account</h3>
+          <p style="color: #333;">Manage multiple tokens</p>
+        </a>
+        
+        <a href="/raid-protection" class="card" style="text-decoration: none; background: linear-gradient(135deg, #cc2b5e 0%, #753a88 100%);">
+          <h3 style="color: white;">🛡️ Raid Protection</h3>
+          <p style="color: white;">Anti-raid tools</p>
+        </a>
+        
+        <a href="/backup-manager" class="card" style="text-decoration: none; background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);">
+          <h3 style="color: white;">💾 Backups</h3>
+          <p style="color: white;">Backup & restore</p>
+        </a>
       </div>
     </div>
 
@@ -270,6 +295,90 @@
       
       updateRPC(data);
     }
+    
+    // Theme Switcher
+    function toggleThemeSwitcher() {
+      const switcher = document.getElementById('themeSwitcher');
+      switcher.classList.toggle('active');
+    }
+    
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+      fetch('/theme/set', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme })
+      });
+      showNotification(`Theme changed to ${theme}`, 'success');
+    }
+    
+    // Notification Center
+    function toggleNotifications() {
+      const center = document.getElementById('notificationCenter');
+      center.classList.toggle('active');
+    }
+    
+    // FAB Menu
+    function toggleFABMenu() {
+      const menu = document.getElementById('fabMenu');
+      menu.classList.toggle('active');
+    }
+    
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
   </script>
+  
+  <!-- Theme Switcher -->
+  <div id="themeSwitcher" class="theme-switcher">
+    <h3 style="margin-bottom: 15px;">🎨 Choose Theme</h3>
+    <div class="theme-option" onclick="setTheme('dark')">
+      <div class="theme-preview dark"></div>
+      <span>Dark</span>
+    </div>
+    <div class="theme-option" onclick="setTheme('light')">
+      <div class="theme-preview light"></div>
+      <span>Light</span>
+    </div>
+    <div class="theme-option" onclick="setTheme('amoled')">
+      <div class="theme-preview amoled"></div>
+      <span>AMOLED</span>
+    </div>
+    <div class="theme-option" onclick="setTheme('purple')">
+      <div class="theme-preview purple"></div>
+      <span>Purple</span>
+    </div>
+    <div class="theme-option" onclick="setTheme('nord')">
+      <div class="theme-preview nord"></div>
+      <span>Nord</span>
+    </div>
+  </div>
+  
+  <!-- Notification Center -->
+  <div id="notificationCenter" class="notification-center">
+    <div class="notification-header">
+      <h3>🔔 Notifications</h3>
+      <button class="btn btn-sm btn-secondary" onclick="toggleNotifications()">✕</button>
+    </div>
+    <div class="notification-list">
+      <p style="text-align: center; color: var(--text-muted); padding: 20px;">
+        No new notifications
+      </p>
+    </div>
+  </div>
+  
+  <!-- Floating Action Button -->
+  <div class="fab-container">
+    <div id="fabMenu" class="fab-menu">
+      <a href="/templates" class="fab-item">📝 Templates</a>
+      <a href="/search" class="fab-item">🔍 Search</a>
+      <a href="/multi-account" class="fab-item">👥 Multi-Account</a>
+      <a href="/raid-protection" class="fab-item">🛡️ Raid Protection</a>
+      <a href="/backup-manager" class="fab-item">💾 Backups</a>
+      <button class="fab-item" onclick="toggleThemeSwitcher()">🎨 Theme</button>
+    </div>
+    <button class="fab" onclick="toggleFABMenu()">+</button>
+  </div>
 </body>
 </html>
