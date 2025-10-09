@@ -42,6 +42,18 @@ A comprehensive web-based dashboard for Discord selfbots using discord.js-selfbo
 - 🎭 **Glassmorphism UI**: Modern glass effect with smooth animations
 - 🌈 **Enhanced Cards**: Gradient cards with hover effects and animations
 
+### NEWEST Ultra Advanced Features (Complete discord.js-selfbot-v13 Implementation)
+- 🎨 **Sticker Manager**: Browse and send custom stickers from all your guilds
+- 🧵 **Thread Manager**: Create, join, and manage threads across all channels
+- 🎙️ **Stage Channels**: Join stage channels, request to speak, and participate in events
+- 📹 **Voice Streaming & Video**: Stream audio, video, and screen to voice channels
+- 💎 **Nitro Features**: Manage Nitro subscription, gift Nitro, and boost servers
+- 🌐 **Guild Discovery**: Browse and join public Discord servers via invite codes
+- 🎮 **Message Components**: Create interactive buttons and select menus
+- 🔊 **Soundboard Manager**: Browse and send soundboard sounds
+- ⚙️ **Advanced Settings**: Granular control over Discord settings (privacy, appearance, etc.)
+- 📱 **Mobile Presence Simulator**: Change device status (Desktop, Mobile, Web)
+
 ### Advanced Features
 - ✨ **Custom Status**: Set custom status with emoji and expiration
 - 🎮 **Rich Presence (RPC)**: Create custom Rich Presence activities

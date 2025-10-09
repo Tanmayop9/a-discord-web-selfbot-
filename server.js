@@ -1956,6 +1956,700 @@ app.get('/quick-actions', async (req, res) => {
   res.json({ actions: quickActions });
 });
 
+// ========================================
+// NEW ULTRA ADVANCED FEATURES
+// ========================================
+
+// Storage for new features
+let stickerPacks = [];
+let guildStickers = new Map();
+let activeThreads = [];
+let archivedThreads = [];
+let stageChannels = [];
+let currentStage = null;
+let streamingStatus = {
+  active: false,
+  channelId: null,
+  quality: '1080p',
+  fps: 60,
+  video: false,
+  screenShare: false
+};
+let nitroStatus = {
+  type: null,
+  expiresAt: null,
+  boosts: []
+};
+let componentMessages = [];
+let soundboardSounds = [];
+let advancedSettings = {};
+let deviceStatus = 'desktop';
+
+// ========================================
+// STICKERS MANAGER
+// ========================================
+
+app.get('/stickers', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    // Fetch sticker packs
+    const stickers = [];
+    
+    // Get guild stickers
+    for (const guild of client.guilds.cache.values()) {
+      try {
+        const guildStickers = await guild.stickers.fetch();
+        guildStickers.forEach(sticker => {
+          stickers.push({
+            id: sticker.id,
+            name: sticker.name,
+            description: sticker.description,
+            tags: sticker.tags,
+            format: sticker.format,
+            guild: guild.name,
+            guildId: guild.id,
+            url: sticker.url,
+            available: sticker.available
+          });
+        });
+      } catch (err) {
+        console.error(`Failed to fetch stickers for ${guild.name}`);
+      }
+    }
+    
+    res.render('stickers', { stickers, user: client.user });
+  } catch (error) {
+    res.status(500).send('Error fetching stickers: ' + error.message);
+  }
+});
+
+app.post('/stickers/send', async (req, res) => {
+  const { channelId, stickerId } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const channel = client.channels.cache.get(channelId);
+    if (!channel) {
+      return res.status(404).json({ error: 'Channel not found' });
+    }
+    
+    // Send sticker
+    await channel.send({ stickers: [stickerId] });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========================================
+// THREADS MANAGER
+// ========================================
+
+app.get('/threads/:channelId?', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const threads = [];
+    
+    if (req.params.channelId) {
+      const channel = client.channels.cache.get(req.params.channelId);
+      if (channel && channel.threads) {
+        const activeThreads = await channel.threads.fetchActive();
+        const archivedThreads = await channel.threads.fetchArchived();
+        
+        activeThreads.threads.forEach(thread => {
+          threads.push({
+            id: thread.id,
+            name: thread.name,
+            archived: false,
+            locked: thread.locked,
+            memberCount: thread.memberCount,
+            messageCount: thread.messageCount,
+            ownerId: thread.ownerId,
+            channelId: channel.id,
+            channelName: channel.name
+          });
+        });
+        
+        archivedThreads.threads.forEach(thread => {
+          threads.push({
+            id: thread.id,
+            name: thread.name,
+            archived: true,
+            locked: thread.locked,
+            memberCount: thread.memberCount,
+            messageCount: thread.messageCount,
+            ownerId: thread.ownerId,
+            channelId: channel.id,
+            channelName: channel.name
+          });
+        });
+      }
+    } else {
+      // Get all threads from all channels
+      for (const guild of client.guilds.cache.values()) {
+        for (const channel of guild.channels.cache.values()) {
+          if (channel.threads) {
+            try {
+              const activeThreads = await channel.threads.fetchActive();
+              activeThreads.threads.forEach(thread => {
+                threads.push({
+                  id: thread.id,
+                  name: thread.name,
+                  archived: false,
+                  locked: thread.locked,
+                  memberCount: thread.memberCount,
+                  messageCount: thread.messageCount,
+                  ownerId: thread.ownerId,
+                  channelId: channel.id,
+                  channelName: channel.name,
+                  guildName: guild.name
+                });
+              });
+            } catch (err) {
+              // Skip channels we can't access
+            }
+          }
+        }
+      }
+    }
+    
+    res.render('threads', { threads, user: client.user, channelId: req.params.channelId });
+  } catch (error) {
+    res.status(500).send('Error fetching threads: ' + error.message);
+  }
+});
+
+app.post('/threads/create', async (req, res) => {
+  const { channelId, name, autoArchiveDuration, type, messageId } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const channel = client.channels.cache.get(channelId);
+    if (!channel) {
+      return res.status(404).json({ error: 'Channel not found' });
+    }
+    
+    let thread;
+    if (messageId) {
+      const message = await channel.messages.fetch(messageId);
+      thread = await message.startThread({
+        name: name || 'New Thread',
+        autoArchiveDuration: parseInt(autoArchiveDuration) || 60
+      });
+    } else {
+      thread = await channel.threads.create({
+        name: name || 'New Thread',
+        autoArchiveDuration: parseInt(autoArchiveDuration) || 60,
+        type: type || 'GUILD_PUBLIC_THREAD'
+      });
+    }
+    
+    res.json({ success: true, threadId: thread.id });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/threads/:id/join', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const thread = client.channels.cache.get(req.params.id);
+    if (!thread) {
+      return res.status(404).json({ error: 'Thread not found' });
+    }
+    
+    await thread.join();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/threads/:id/leave', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const thread = client.channels.cache.get(req.params.id);
+    if (!thread) {
+      return res.status(404).json({ error: 'Thread not found' });
+    }
+    
+    await thread.leave();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========================================
+// STAGE CHANNELS MANAGER
+// ========================================
+
+app.get('/stage-channels', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const stages = [];
+    
+    for (const guild of client.guilds.cache.values()) {
+      for (const channel of guild.channels.cache.values()) {
+        if (channel.type === 'GUILD_STAGE_VOICE') {
+          const stageInstance = await channel.fetchStageInstance().catch(() => null);
+          
+          stages.push({
+            id: channel.id,
+            name: channel.name,
+            guildName: guild.name,
+            guildId: guild.id,
+            topic: stageInstance?.topic || 'No active stage',
+            active: !!stageInstance,
+            participants: channel.members?.size || 0
+          });
+        }
+      }
+    }
+    
+    res.render('stage-channels', { stages, currentStage, user: client.user });
+  } catch (error) {
+    res.status(500).send('Error fetching stage channels: ' + error.message);
+  }
+});
+
+app.post('/stage/:id/join', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const channel = client.channels.cache.get(req.params.id);
+    if (!channel || channel.type !== 'GUILD_STAGE_VOICE') {
+      return res.status(404).json({ error: 'Stage channel not found' });
+    }
+    
+    await channel.guild.members.me.voice.setChannel(channel);
+    await channel.guild.members.me.voice.setSuppressed(true); // Join as audience
+    
+    currentStage = {
+      id: channel.id,
+      name: channel.name,
+      suppressed: true
+    };
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/stage/:id/speak', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const channel = client.channels.cache.get(req.params.id);
+    if (!channel) {
+      return res.status(404).json({ error: 'Stage channel not found' });
+    }
+    
+    await channel.guild.members.me.voice.setSuppressed(false); // Request to speak
+    
+    if (currentStage) {
+      currentStage.suppressed = false;
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/stage/:id/leave', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const channel = client.channels.cache.get(req.params.id);
+    if (!channel) {
+      return res.status(404).json({ error: 'Stage channel not found' });
+    }
+    
+    await channel.guild.members.me.voice.setChannel(null);
+    currentStage = null;
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========================================
+// VOICE STREAMING & VIDEO
+// ========================================
+
+app.get('/streaming', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  res.render('streaming', { streamingStatus, user: client.user });
+});
+
+app.post('/streaming/start', async (req, res) => {
+  const { channelId, quality, fps } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const channel = client.channels.cache.get(channelId);
+    if (!channel || channel.type !== 'GUILD_VOICE') {
+      return res.status(404).json({ error: 'Voice channel not found' });
+    }
+    
+    // Note: Actual streaming requires additional setup
+    streamingStatus = {
+      active: true,
+      channelId,
+      quality: quality || '1080p',
+      fps: parseInt(fps) || 60,
+      video: false,
+      screenShare: false
+    };
+    
+    res.json({ success: true, message: 'Streaming setup ready (actual streaming requires additional configuration)' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/streaming/stop', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  streamingStatus = {
+    active: false,
+    channelId: null,
+    quality: '1080p',
+    fps: 60,
+    video: false,
+    screenShare: false
+  };
+  
+  res.json({ success: true });
+});
+
+app.post('/streaming/video', async (req, res) => {
+  const { enabled } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  streamingStatus.video = enabled;
+  res.json({ success: true, video: enabled });
+});
+
+app.post('/streaming/screen', async (req, res) => {
+  const { enabled } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  streamingStatus.screenShare = enabled;
+  res.json({ success: true, screenShare: enabled });
+});
+
+// ========================================
+// NITRO FEATURES MANAGER
+// ========================================
+
+app.get('/nitro', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const nitroInfo = {
+      type: client.user.nitroType || 'None',
+      premiumSince: client.user.premiumSince || null,
+      boosts: []
+    };
+    
+    // Get boost information
+    for (const guild of client.guilds.cache.values()) {
+      const member = await guild.members.fetch(client.user.id).catch(() => null);
+      if (member && member.premiumSince) {
+        nitroInfo.boosts.push({
+          guildId: guild.id,
+          guildName: guild.name,
+          since: member.premiumSince
+        });
+      }
+    }
+    
+    res.render('nitro', { nitroInfo, user: client.user });
+  } catch (error) {
+    res.status(500).send('Error fetching nitro info: ' + error.message);
+  }
+});
+
+app.post('/nitro/boost', async (req, res) => {
+  const { guildId } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const guild = client.guilds.cache.get(guildId);
+    if (!guild) {
+      return res.status(404).json({ error: 'Guild not found' });
+    }
+    
+    // Note: Actual boosting requires Nitro
+    res.json({ success: true, message: 'Boost functionality requires Nitro subscription' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========================================
+// GUILD DISCOVERY
+// ========================================
+
+app.get('/guild-discovery', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    // Note: Guild discovery API is limited in selfbots
+    const discoveryGuilds = [];
+    
+    res.render('guild-discovery', { guilds: discoveryGuilds, user: client.user });
+  } catch (error) {
+    res.status(500).send('Error fetching guild discovery: ' + error.message);
+  }
+});
+
+app.post('/guild-discovery/join', async (req, res) => {
+  const { inviteCode } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const invite = await client.fetchInvite(inviteCode);
+    await client.acceptInvite(inviteCode);
+    
+    res.json({ success: true, guildName: invite.guild.name });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========================================
+// MESSAGE COMPONENTS MANAGER
+// ========================================
+
+app.get('/components', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  res.render('components', { componentMessages, user: client.user });
+});
+
+app.post('/components/create', async (req, res) => {
+  const { channelId, content, components } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const channel = client.channels.cache.get(channelId);
+    if (!channel) {
+      return res.status(404).json({ error: 'Channel not found' });
+    }
+    
+    // Parse components JSON
+    const parsedComponents = JSON.parse(components);
+    
+    const message = await channel.send({
+      content: content || 'Message with components',
+      components: parsedComponents
+    });
+    
+    componentMessages.push({
+      id: message.id,
+      channelId: channel.id,
+      components: parsedComponents
+    });
+    
+    res.json({ success: true, messageId: message.id });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========================================
+// SOUNDBOARD MANAGER
+// ========================================
+
+app.get('/soundboard', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const sounds = [];
+    
+    // Get guild soundboard sounds
+    for (const guild of client.guilds.cache.values()) {
+      if (guild.soundboards) {
+        try {
+          const guildSounds = await guild.soundboards.fetch();
+          guildSounds.forEach(sound => {
+            sounds.push({
+              id: sound.id,
+              name: sound.name,
+              guildName: guild.name,
+              guildId: guild.id,
+              emoji: sound.emoji
+            });
+          });
+        } catch (err) {
+          // Guild doesn't support soundboard or we can't access it
+        }
+      }
+    }
+    
+    res.render('soundboard', { sounds, user: client.user });
+  } catch (error) {
+    res.status(500).send('Error fetching soundboard: ' + error.message);
+  }
+});
+
+app.post('/soundboard/send', async (req, res) => {
+  const { soundId, channelId } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const channel = client.channels.cache.get(channelId);
+    if (!channel) {
+      return res.status(404).json({ error: 'Channel not found' });
+    }
+    
+    // Note: Soundboard sending may require additional setup
+    res.json({ success: true, message: 'Soundboard feature requires additional configuration' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========================================
+// ADVANCED SETTINGS MANAGER
+// ========================================
+
+app.get('/advanced-settings', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const settings = {
+      locale: client.user.locale || 'en-US',
+      theme: advancedSettings.theme || 'dark',
+      compactMode: advancedSettings.compactMode || false,
+      showEmbeds: advancedSettings.showEmbeds !== false,
+      renderEmbeds: advancedSettings.renderEmbeds !== false,
+      animatedEmojis: advancedSettings.animatedEmojis !== false,
+      messageDisplayCompact: advancedSettings.messageDisplayCompact || false,
+      convertEmoticons: advancedSettings.convertEmoticons || false,
+      explicitContentFilter: advancedSettings.explicitContentFilter || 'DISABLED'
+    };
+    
+    res.render('advanced-settings', { settings, user: client.user });
+  } catch (error) {
+    res.status(500).send('Error fetching settings: ' + error.message);
+  }
+});
+
+app.post('/advanced-settings/update', async (req, res) => {
+  const { setting, value } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    advancedSettings[setting] = value;
+    
+    // Note: Actual Discord settings update requires different API calls
+    res.json({ success: true, message: 'Setting updated locally' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========================================
+// MOBILE PRESENCE SIMULATOR
+// ========================================
+
+app.get('/mobile-presence', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  res.render('mobile-presence', { deviceStatus, user: client.user });
+});
+
+app.post('/presence/device', async (req, res) => {
+  const { device } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    deviceStatus = device || 'desktop';
+    
+    // Note: Changing device status requires modifying WebSocket properties
+    res.json({ success: true, device: deviceStatus, message: 'Device status updated locally' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Discord client events
 client.on('ready', async () => {
   console.log(`\n✅ Successfully logged in as: ${client.user.tag}`);

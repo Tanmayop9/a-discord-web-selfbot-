@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Threads - Discord Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">🎮 Discord Selfbot</div>
+    <div class="nav-links">
+      <a href="/">Dashboard</a>
+      <a href="/servers">Servers</a>
+      <a href="/threads" class="active">Threads</a>
+      <a href="/settings">Settings</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="header-section">
+      <h1>🧵 Thread Manager</h1>
+      <p>Manage threads across all channels</p>
+    </div>
+
+    <div class="glass-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+      <h3>📝 Create New Thread</h3>
+      <form id="createThreadForm" class="form-inline">
+        <input type="text" id="threadChannelId" placeholder="Channel ID" required>
+        <input type="text" id="threadName" placeholder="Thread Name" required>
+        <select id="autoArchive">
+          <option value="60">1 hour</option>
+          <option value="1440">24 hours</option>
+          <option value="4320">3 days</option>
+          <option value="10080">7 days</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Create Thread</button>
+      </form>
+    </div>
+
+    <div class="threads-section">
+      <h2>Active Threads (<%= threads.filter(t => !t.archived).length %>)</h2>
+      <div class="threads-list">
+        <% threads.filter(t => !t.archived).forEach(thread => { %>
+          <div class="thread-item">
+            <div class="thread-info">
+              <h3>🧵 <%= thread.name %></h3>
+              <p>Channel: <%= thread.channelName %></p>
+              <% if (thread.guildName) { %>
+                <p>Server: <%= thread.guildName %></p>
+              <% } %>
+              <p class="thread-stats">
+                💬 <%= thread.messageCount %> messages | 
+                👥 <%= thread.memberCount %> members
+                <% if (thread.locked) { %>
+                  | 🔒 Locked
+                <% } %>
+              </p>
+            </div>
+            <div class="thread-actions">
+              <button class="btn btn-sm" onclick="joinThread('<%= thread.id %>')">Join</button>
+              <button class="btn btn-sm btn-secondary" onclick="leaveThread('<%= thread.id %>')">Leave</button>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+
+      <% if (threads.filter(t => t.archived).length > 0) { %>
+        <h2 style="margin-top: 2rem;">Archived Threads (<%= threads.filter(t => t.archived).length %>)</h2>
+        <div class="threads-list">
+          <% threads.filter(t => t.archived).forEach(thread => { %>
+            <div class="thread-item archived">
+              <div class="thread-info">
+                <h3>📦 <%= thread.name %></h3>
+                <p>Channel: <%= thread.channelName %></p>
+                <p class="thread-stats">
+                  💬 <%= thread.messageCount %> messages | 
+                  👥 <%= thread.memberCount %> members
+                </p>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('createThreadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const data = {
+        channelId: document.getElementById('threadChannelId').value,
+        name: document.getElementById('threadName').value,
+        autoArchiveDuration: document.getElementById('autoArchive').value
+      };
+      
+      try {
+        const response = await fetch('/threads/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          alert('Thread created successfully!');
+          location.reload();
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        alert('Error creating thread: ' + error.message);
+      }
+    });
+
+    async function joinThread(threadId) {
+      try {
+        const response = await fetch(`/threads/${threadId}/join`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          alert('Joined thread successfully!');
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        alert('Error joining thread: ' + error.message);
+      }
+    }
+
+    async function leaveThread(threadId) {
+      try {
+        const response = await fetch(`/threads/${threadId}/leave`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          alert('Left thread successfully!');
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        alert('Error leaving thread: ' + error.message);
+      }
+    }
+  </script>
+
+  <style>
+    .threads-section {
+      margin-top: 2rem;
+    }
+
+    .threads-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .thread-item {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: transform 0.2s;
+    }
+
+    .thread-item:hover {
+      transform: translateX(5px);
+    }
+
+    .thread-item.archived {
+      opacity: 0.7;
+    }
+
+    .thread-info h3 {
+      margin: 0 0 0.5rem 0;
+    }
+
+    .thread-info p {
+      margin: 0.25rem 0;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .thread-stats {
+      font-size: 0.85rem;
+      margin-top: 0.5rem !important;
+    }
+
+    .thread-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .form-inline {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .form-inline input,
+    .form-inline select {
+      flex: 1;
+      min-width: 150px;
+    }
+  </style>
+</body>
+</html>

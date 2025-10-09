@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stage Channels - Discord Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">🎮 Discord Selfbot</div>
+    <div class="nav-links">
+      <a href="/">Dashboard</a>
+      <a href="/servers">Servers</a>
+      <a href="/voice">Voice</a>
+      <a href="/stage-channels" class="active">Stage</a>
+      <a href="/settings">Settings</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="header-section">
+      <h1>🎙️ Stage Channel Manager</h1>
+      <p>Join and participate in stage events</p>
+    </div>
+
+    <% if (currentStage) { %>
+      <div class="alert alert-success">
+        <h3>✅ Currently in Stage</h3>
+        <p><strong><%= currentStage.name %></strong></p>
+        <p>Status: <%= currentStage.suppressed ? '👥 Audience' : '🎤 Speaker' %></p>
+        <button class="btn btn-danger" onclick="leaveStage('<%= currentStage.id %>')">Leave Stage</button>
+      </div>
+    <% } %>
+
+    <div class="glass-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+      <h3>🎭 Available Stage Channels (<%= stages.length %>)</h3>
+      <p>Join stage channels to listen or speak</p>
+    </div>
+
+    <div class="stages-list">
+      <% if (stages.length === 0) { %>
+        <div class="alert alert-info">
+          <p>No stage channels available in your servers.</p>
+        </div>
+      <% } else { %>
+        <% stages.forEach(stage => { %>
+          <div class="stage-card <%= stage.active ? 'active-stage' : 'inactive-stage' %>">
+            <div class="stage-header">
+              <h3>🎙️ <%= stage.name %></h3>
+              <span class="stage-status <%= stage.active ? 'live' : 'offline' %>">
+                <%= stage.active ? '🔴 LIVE' : '⚫ Offline' %>
+              </span>
+            </div>
+            <div class="stage-info">
+              <p><strong>Server:</strong> <%= stage.guildName %></p>
+              <% if (stage.active) { %>
+                <p><strong>Topic:</strong> <%= stage.topic %></p>
+                <p><strong>Participants:</strong> 👥 <%= stage.participants %></p>
+              <% } %>
+            </div>
+            <div class="stage-actions">
+              <button class="btn btn-primary" onclick="joinStage('<%= stage.id %>')">
+                Join as Audience
+              </button>
+              <% if (currentStage && currentStage.id === stage.id && currentStage.suppressed) { %>
+                <button class="btn btn-success" onclick="requestSpeak('<%= stage.id %>')">
+                  🎤 Request to Speak
+                </button>
+              <% } %>
+            </div>
+          </div>
+        <% }) %>
+      <% } %>
+    </div>
+  </div>
+
+  <script>
+    async function joinStage(stageId) {
+      try {
+        const response = await fetch(`/stage/${stageId}/join`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          alert('Joined stage successfully!');
+          location.reload();
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        alert('Error joining stage: ' + error.message);
+      }
+    }
+
+    async function requestSpeak(stageId) {
+      try {
+        const response = await fetch(`/stage/${stageId}/speak`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          alert('Requested to speak!');
+          location.reload();
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        alert('Error requesting to speak: ' + error.message);
+      }
+    }
+
+    async function leaveStage(stageId) {
+      try {
+        const response = await fetch(`/stage/${stageId}/leave`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          alert('Left stage successfully!');
+          location.reload();
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        alert('Error leaving stage: ' + error.message);
+      }
+    }
+  </script>
+
+  <style>
+    .stages-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .stage-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1.5rem;
+      border-left: 4px solid var(--accent);
+      transition: transform 0.2s;
+    }
+
+    .stage-card:hover {
+      transform: translateX(5px);
+    }
+
+    .active-stage {
+      border-left-color: #f04747;
+    }
+
+    .inactive-stage {
+      border-left-color: #72767d;
+    }
+
+    .stage-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .stage-header h3 {
+      margin: 0;
+    }
+
+    .stage-status {
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+
+    .stage-status.live {
+      background: rgba(240, 71, 71, 0.2);
+      color: #f04747;
+    }
+
+    .stage-status.offline {
+      background: rgba(114, 118, 125, 0.2);
+      color: #72767d;
+    }
+
+    .stage-info p {
+      margin: 0.5rem 0;
+      color: var(--text-secondary);
+    }
+
+    .stage-actions {
+      margin-top: 1rem;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+  </style>
+</body>
+</html>

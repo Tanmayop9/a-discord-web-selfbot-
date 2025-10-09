@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mobile Presence - Discord Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">🎮 Discord Selfbot</div>
+    <div class="nav-links">
+      <a href="/">Dashboard</a>
+      <a href="/settings">Settings</a>
+      <a href="/mobile-presence" class="active">Device</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="header-section">
+      <h1>📱 Mobile Presence Simulator</h1>
+      <p>Change your device status and appearance</p>
+    </div>
+
+    <div class="glass-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+      <h3>📱 Current Device Status</h3>
+      <p class="device-status">
+        <span class="device-icon">
+          <% if (deviceStatus === 'mobile') { %>
+            📱
+          <% } else if (deviceStatus === 'web') { %>
+            🌐
+          <% } else { %>
+            💻
+          <% } %>
+        </span>
+        <strong><%= deviceStatus.charAt(0).toUpperCase() + deviceStatus.slice(1) %></strong>
+      </p>
+    </div>
+
+    <div class="device-selector">
+      <h2>🎮 Select Device Type</h2>
+      <div class="devices-grid">
+        <div class="device-card <%= deviceStatus === 'desktop' ? 'active' : '' %>" onclick="setDevice('desktop')">
+          <div class="device-icon-large">💻</div>
+          <h3>Desktop</h3>
+          <p>Show desktop badge</p>
+          <% if (deviceStatus === 'desktop') { %>
+            <span class="active-badge">✅ Active</span>
+          <% } %>
+        </div>
+
+        <div class="device-card <%= deviceStatus === 'mobile' ? 'active' : '' %>" onclick="setDevice('mobile')">
+          <div class="device-icon-large">📱</div>
+          <h3>Mobile</h3>
+          <p>Show mobile badge</p>
+          <% if (deviceStatus === 'mobile') { %>
+            <span class="active-badge">✅ Active</span>
+          <% } %>
+        </div>
+
+        <div class="device-card <%= deviceStatus === 'web' ? 'active' : '' %>" onclick="setDevice('web')">
+          <div class="device-icon-large">🌐</div>
+          <h3>Web</h3>
+          <p>Show web badge</p>
+          <% if (deviceStatus === 'web') { %>
+            <span class="active-badge">✅ Active</span>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="device-info">
+      <h2>ℹ️ Device Information</h2>
+      <div class="info-cards">
+        <div class="info-card">
+          <h3>💻 Desktop</h3>
+          <p>Default Discord client appearance. Shows desktop icon in user list.</p>
+        </div>
+        <div class="info-card">
+          <h3>📱 Mobile</h3>
+          <p>Appears as if using Discord mobile app. Shows mobile icon and "on mobile" status.</p>
+        </div>
+        <div class="info-card">
+          <h3>🌐 Web</h3>
+          <p>Appears as if using web browser. Shows web icon in user list.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-info" style="margin-top: 2rem;">
+      <p><strong>ℹ️ Note:</strong> Device status changes are stored locally. Full device spoofing requires modifying WebSocket connection properties, which may have limited functionality in selfbots.</p>
+    </div>
+  </div>
+
+  <script>
+    async function setDevice(device) {
+      try {
+        const response = await fetch('/presence/device', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ device })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          alert(`Device status updated to ${device}!\n${result.message}`);
+          location.reload();
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        alert('Error setting device: ' + error.message);
+      }
+    }
+  </script>
+
+  <style>
+    .device-status {
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .device-icon {
+      font-size: 2.5rem;
+    }
+
+    .device-selector {
+      margin-top: 2rem;
+    }
+
+    .devices-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .device-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      border: 3px solid transparent;
+      position: relative;
+    }
+
+    .device-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .device-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 20px rgba(88, 101, 242, 0.3);
+    }
+
+    .device-icon-large {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+
+    .device-card h3 {
+      margin: 0.5rem 0;
+    }
+
+    .device-card p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin: 0;
+    }
+
+    .active-badge {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 0.25rem 0.75rem;
+      background: var(--accent);
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+
+    .device-info {
+      margin-top: 2rem;
+    }
+
+    .info-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .info-card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+
+    .info-card h3 {
+      margin: 0 0 0.5rem 0;
+    }
+
+    .info-card p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+  </style>
+</body>
+</html>
