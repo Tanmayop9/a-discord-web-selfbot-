@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= guild.name %> - Discord Web Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/servers">Servers</a></li>
+        <li><a href="/dms">DMs</a></li>
+        <li><a href="/friends">Friends</a></li>
+        <li><a href="/voice">Voice</a></li>
+      </ul>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <div class="flex-between">
+        <div>
+          <div class="card-header"><%= guild.name %></div>
+          <p style="color: var(--text-secondary);"><%= guild.memberCount %> members</p>
+        </div>
+        <button class="btn btn-danger" onclick="leaveServer('<%= guild.id %>')">Leave Server</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('channels-tab')">Channels</div>
+      <div class="tab" onclick="switchTab('roles-tab')">Roles</div>
+      <div class="tab" onclick="switchTab('emojis-tab')">Emojis</div>
+      <div class="tab" onclick="switchTab('invites-tab')">Invites</div>
+    </div>
+
+    <div id="channels-tab" class="tab-content active">
+      <div class="card">
+        <div class="card-header">📝 Channels</div>
+        <ul class="channel-list">
+          <% channels.forEach(channel => { %>
+          <li class="channel-item" onclick="location.href='/channel/<%= guild.id %>/<%= channel.id %>'">
+            <span class="<%= channel.type === 'GUILD_VOICE' ? 'voice-channel' : 'channel-name' %>">
+              <%= channel.name %>
+            </span>
+            <% if (channel.nsfw) { %>
+            <span class="badge badge-danger">NSFW</span>
+            <% } %>
+          </li>
+          <% }); %>
+        </ul>
+      </div>
+    </div>
+
+    <div id="roles-tab" class="tab-content">
+      <div class="card">
+        <div class="card-header">🎭 Roles</div>
+        <div class="grid grid-2">
+          <% roles.forEach(role => { %>
+          <div class="card" style="border-left: 4px solid <%= role.color %>;">
+            <h4><%= role.name %></h4>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">
+              Position: <%= role.position %><br>
+              Mentionable: <%= role.mentionable ? 'Yes' : 'No' %><br>
+              Hoisted: <%= role.hoist ? 'Yes' : 'No' %>
+            </p>
+          </div>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+
+    <div id="emojis-tab" class="tab-content">
+      <div class="card">
+        <div class="card-header">😊 Emojis (<%= emojis.length %>)</div>
+        <div class="grid grid-4">
+          <% emojis.forEach(emoji => { %>
+          <div class="card text-center">
+            <img src="<%= emoji.url %>" alt="<%= emoji.name %>" style="width: 48px; height: 48px;">
+            <p style="margin-top: 10px; color: var(--text-secondary);">:<%= emoji.name %>:</p>
+          </div>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+
+    <div id="invites-tab" class="tab-content">
+      <div class="card">
+        <div class="card-header">🔗 Create Invite</div>
+        <form onsubmit="event.preventDefault(); createInviteForServer();">
+          <div class="form-group">
+            <label class="form-label">Channel</label>
+            <select class="form-control" id="inviteChannel" required>
+              <% channels.forEach(channel => { %>
+              <option value="<%= channel.id %>"><%= channel.name %></option>
+              <% }); %>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">Create Invite</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    async function createInviteForServer() {
+      const channelId = document.getElementById('inviteChannel').value;
+      const result = await createInvite(channelId);
+      if (result) {
+        alert('Invite created: ' + result.url);
+      }
+    }
+  </script>
+</body>
+</html>

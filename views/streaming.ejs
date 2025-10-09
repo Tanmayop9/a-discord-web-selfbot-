@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice Streaming - Discord Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">🎮 Discord Selfbot</div>
+    <div class="nav-links">
+      <a href="/">Dashboard</a>
+      <a href="/voice">Voice</a>
+      <a href="/streaming" class="active">Streaming</a>
+      <a href="/settings">Settings</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="header-section">
+      <h1>📹 Voice Streaming & Video</h1>
+      <p>Stream audio, video, and screen to voice channels</p>
+    </div>
+
+    <div class="glass-card" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+      <h3>🎥 Streaming Status</h3>
+      <% if (streamingStatus.active) { %>
+        <p class="status-live">🔴 LIVE - Streaming Active</p>
+        <p>Quality: <%= streamingStatus.quality %> @ <%= streamingStatus.fps %>fps</p>
+        <p>Video: <%= streamingStatus.video ? '✅ Enabled' : '❌ Disabled' %></p>
+        <p>Screen Share: <%= streamingStatus.screenShare ? '✅ Enabled' : '❌ Disabled' %></p>
+        <button class="btn btn-danger" onclick="stopStreaming()">Stop Streaming</button>
+      <% } else { %>
+        <p class="status-offline">⚫ Offline</p>
+        <p>Configure settings and start streaming below</p>
+      <% } %>
+    </div>
+
+    <div class="streaming-controls">
+      <div class="control-section">
+        <h2>🎬 Start Streaming</h2>
+        <form id="startStreamForm">
+          <div class="form-group">
+            <label for="channelId">Voice Channel ID:</label>
+            <input type="text" id="channelId" name="channelId" required placeholder="Enter voice channel ID">
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="quality">Video Quality:</label>
+              <select id="quality" name="quality">
+                <option value="720p">720p (HD)</option>
+                <option value="1080p" selected>1080p (Full HD)</option>
+                <option value="1440p">1440p (2K)</option>
+                <option value="2160p">2160p (4K)</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="fps">Frame Rate:</label>
+              <select id="fps" name="fps">
+                <option value="30">30 FPS</option>
+                <option value="60" selected>60 FPS</option>
+              </select>
+            </div>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">Start Streaming</button>
+        </form>
+      </div>
+
+      <% if (streamingStatus.active) { %>
+        <div class="control-section">
+          <h2>🎮 Stream Controls</h2>
+          
+          <div class="toggle-controls">
+            <div class="toggle-item">
+              <label>
+                <input type="checkbox" id="videoToggle" <%= streamingStatus.video ? 'checked' : '' %> onchange="toggleVideo(this.checked)">
+                <span>📹 Enable Video</span>
+              </label>
+            </div>
+            
+            <div class="toggle-item">
+              <label>
+                <input type="checkbox" id="screenShareToggle" <%= streamingStatus.screenShare ? 'checked' : '' %> onchange="toggleScreenShare(this.checked)">
+                <span>🖥️ Enable Screen Share</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      <% } %>
+    </div>
+
+    <div class="alert alert-warning" style="margin-top: 2rem;">
+      <p><strong>⚠️ Note:</strong> Actual streaming requires additional configuration and may not work with all selfbot implementations. Video streaming typically requires desktop client features.</p>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('startStreamForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData(e.target);
+      const data = {
+        channelId: formData.get('channelId'),
+        quality: formData.get('quality'),
+        fps: formData.get('fps')
+      };
+      
+      try {
+        const response = await fetch('/streaming/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          alert(result.message || 'Streaming started!');
+          location.reload();
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        alert('Error starting stream: ' + error.message);
+      }
+    });
+
+    async function stopStreaming() {
+      try {
+        const response = await fetch('/streaming/stop', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          alert('Streaming stopped!');
+          location.reload();
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        alert('Error stopping stream: ' + error.message);
+      }
+    }
+
+    async function toggleVideo(enabled) {
+      try {
+        const response = await fetch('/streaming/video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled })
+        });
+        
+        const result = await response.json();
+        if (!result.success) {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        alert('Error toggling video: ' + error.message);
+      }
+    }
+
+    async function toggleScreenShare(enabled) {
+      try {
+        const response = await fetch('/streaming/screen', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled })
+        });
+        
+        const result = await response.json();
+        if (!result.success) {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        alert('Error toggling screen share: ' + error.message);
+      }
+    }
+  </script>
+
+  <style>
+    .streaming-controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .control-section {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+
+    .control-section h2 {
+      margin-top: 0;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .toggle-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .toggle-item {
+      padding: 1rem;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+    }
+
+    .toggle-item label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+    }
+
+    .toggle-item input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+    }
+
+    .status-live {
+      color: #f04747;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .status-offline {
+      color: #72767d;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+  </style>
+</body>
+</html>

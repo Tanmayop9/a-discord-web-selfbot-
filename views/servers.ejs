@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Servers - Discord Web Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/servers">Servers</a></li>
+        <li><a href="/dms">DMs</a></li>
+        <li><a href="/friends">Friends</a></li>
+        <li><a href="/voice">Voice</a></li>
+        <li><a href="/settings">Settings</a></li>
+        <li><a href="/user-info">Profile</a></li>
+      </ul>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-header">🏰 Your Servers (<%= servers.length %>)</div>
+      
+      <div class="grid grid-3">
+        <% servers.forEach(server => { %>
+        <div class="server-card" onclick="location.href='/server/<%= server.id %>'">
+          <img src="<%= server.icon %>" alt="<%= server.name %>" class="server-icon">
+          <div class="server-info">
+            <div class="server-name">
+              <%= server.name %>
+              <% if (server.verified) { %>
+              <span class="badge badge-verified">✓</span>
+              <% } %>
+              <% if (server.partnered) { %>
+              <span class="badge badge-partnered">★</span>
+              <% } %>
+              <% if (server.owner) { %>
+              <span class="badge badge-owner">👑</span>
+              <% } %>
+            </div>
+            <div class="server-meta">
+              <%= server.memberCount %> members
+              <% if (server.description) { %>
+              <br><small><%= server.description.substring(0, 50) %><%= server.description.length > 50 ? '...' : '' %></small>
+              <% } %>
+            </div>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+      
+      <% if (servers.length === 0) { %>
+      <p class="text-center" style="color: var(--text-muted); padding: 40px;">
+        You're not in any servers yet.
+      </p>
+      <% } %>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

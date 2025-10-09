@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto-Responder - Discord Web Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/analytics">📊 Analytics</a></li>
+        <li><a href="/auto-responder">🤖 Auto-Responder</a></li>
+        <li><a href="/scheduler">⏰ Scheduler</a></li>
+        <li><a href="/afk">🌙 AFK Mode</a></li>
+      </ul>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-header">🤖 Auto-Responder System</div>
+      
+      <form onsubmit="event.preventDefault(); addAutoResponder();">
+        <div class="grid grid-3">
+          <div class="form-group">
+            <label class="form-label">Trigger</label>
+            <input type="text" class="form-control" id="trigger" placeholder="hello" required>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Match Type</label>
+            <select class="form-control" id="matchType">
+              <option value="contains">Contains</option>
+              <option value="exact">Exact Match</option>
+              <option value="startsWith">Starts With</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Response</label>
+            <input type="text" class="form-control" id="response" placeholder="Hi there!" required>
+          </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Add Auto-Responder</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header">📋 Active Auto-Responders (<%= autoResponders.length %>)</div>
+      
+      <div class="grid grid-2">
+        <% autoResponders.forEach(ar => { %>
+        <div class="card">
+          <div class="flex-between">
+            <div style="flex: 1;">
+              <h4><%= ar.trigger %></h4>
+              <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                Match: <%= ar.matchType %><br>
+                Response: <%= ar.response %>
+              </p>
+            </div>
+            <div class="flex gap-1">
+              <button class="btn btn-sm btn-<%= ar.enabled ? 'success' : 'secondary' %>" 
+                      onclick="toggleAutoResponder(<%= ar.id %>)">
+                <%= ar.enabled ? 'Enabled' : 'Disabled' %>
+              </button>
+              <button class="btn btn-sm btn-danger" onclick="deleteAutoResponder(<%= ar.id %>)">Delete</button>
+            </div>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+      
+      <% if (autoResponders.length === 0) { %>
+      <p class="text-center" style="color: var(--text-muted); padding: 40px;">
+        No auto-responders configured yet.
+      </p>
+      <% } %>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    async function addAutoResponder() {
+      const trigger = document.getElementById('trigger').value;
+      const response = document.getElementById('response').value;
+      const matchType = document.getElementById('matchType').value;
+      
+      try {
+        await apiCall('/auto-responder/add', 'POST', { trigger, response, matchType });
+        showNotification('Auto-responder added!', 'success');
+        setTimeout(() => location.reload(), 1000);
+      } catch (error) {
+        // Error already shown
+      }
+    }
+    
+    async function toggleAutoResponder(id) {
+      try {
+        const result = await apiCall('/auto-responder/toggle', 'POST', { id });
+        showNotification(result.enabled ? 'Enabled!' : 'Disabled!', 'success');
+        setTimeout(() => location.reload(), 1000);
+      } catch (error) {
+        // Error already shown
+      }
+    }
+    
+    async function deleteAutoResponder(id) {
+      if (!confirm('Are you sure you want to delete this auto-responder?')) return;
+      
+      try {
+        await apiCall('/auto-responder/delete', 'POST', { id });
+        showNotification('Auto-responder deleted!', 'success');
+        setTimeout(() => location.reload(), 1000);
+      } catch (error) {
+        // Error already shown
+      }
+    }
+  </script>
+</body>
+</html>

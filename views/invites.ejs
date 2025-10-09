@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invites - Discord Web Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/servers">Servers</a></li>
+        <li><a href="/invites">Invites</a></li>
+      </ul>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-header">🔗 Server Invites (<%= invites.length %>)</div>
+      
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Server</th>
+            <th>Channel</th>
+            <th>Uses</th>
+            <th>Expires</th>
+            <th>Inviter</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% invites.forEach(invite => { %>
+          <tr>
+            <td><code><%= invite.code %></code></td>
+            <td><%= invite.guild %></td>
+            <td><%= invite.channel %></td>
+            <td><%= invite.uses %><% if (invite.maxUses > 0) { %>/<%= invite.maxUses %><% } %></td>
+            <td><%= invite.expiresAt %></td>
+            <td><%= invite.inviter %></td>
+            <td>
+              <button class="btn btn-sm btn-primary" onclick="copyToClipboard('<%= invite.url %>')">Copy</button>
+            </td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+      
+      <% if (invites.length === 0) { %>
+      <p class="text-center" style="color: var(--text-muted); padding: 40px;">
+        No invites found in your servers.
+      </p>
+      <% } %>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

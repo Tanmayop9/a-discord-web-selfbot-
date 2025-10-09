@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Message Components - Discord Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">🎮 Discord Selfbot</div>
+    <div class="nav-links">
+      <a href="/">Dashboard</a>
+      <a href="/embed-builder">Embeds</a>
+      <a href="/components" class="active">Components</a>
+      <a href="/settings">Settings</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="header-section">
+      <h1>🎮 Message Components Builder</h1>
+      <p>Create interactive buttons and select menus</p>
+    </div>
+
+    <div class="glass-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+      <h3>🔘 Create Components</h3>
+      <form id="createComponentsForm">
+        <div class="form-group">
+          <label for="channelId">Channel ID:</label>
+          <input type="text" id="channelId" name="channelId" required placeholder="Enter channel ID">
+        </div>
+        
+        <div class="form-group">
+          <label for="content">Message Content:</label>
+          <textarea id="content" name="content" rows="3" placeholder="Message content..."></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="componentType">Component Type:</label>
+          <select id="componentType" onchange="updateComponentBuilder()">
+            <option value="buttons">Buttons</option>
+            <option value="select">Select Menu</option>
+          </select>
+        </div>
+        
+        <div id="buttonsBuilder" class="component-builder">
+          <h4>Button Configuration</h4>
+          <div id="buttonsList"></div>
+          <button type="button" class="btn btn-sm" onclick="addButton()">+ Add Button</button>
+        </div>
+        
+        <div id="selectBuilder" class="component-builder" style="display: none;">
+          <h4>Select Menu Configuration</h4>
+          <div class="form-group">
+            <label for="selectPlaceholder">Placeholder:</label>
+            <input type="text" id="selectPlaceholder" placeholder="Choose an option...">
+          </div>
+          <div id="optionsList"></div>
+          <button type="button" class="btn btn-sm" onclick="addOption()">+ Add Option</button>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Send Message with Components</button>
+      </form>
+    </div>
+
+    <div class="component-examples">
+      <h2>📋 Example Components</h2>
+      <div class="examples-grid">
+        <div class="example-card">
+          <h3>Primary Button</h3>
+          <pre>{
+  "type": 2,
+  "style": 1,
+  "label": "Primary",
+  "custom_id": "primary_btn"
+}</pre>
+        </div>
+        <div class="example-card">
+          <h3>Link Button</h3>
+          <pre>{
+  "type": 2,
+  "style": 5,
+  "label": "Visit",
+  "url": "https://discord.com"
+}</pre>
+        </div>
+        <div class="example-card">
+          <h3>Select Menu</h3>
+          <pre>{
+  "type": 3,
+  "custom_id": "select_menu",
+  "placeholder": "Choose...",
+  "options": [...]
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let buttonCount = 0;
+    let optionCount = 0;
+
+    function updateComponentBuilder() {
+      const type = document.getElementById('componentType').value;
+      document.getElementById('buttonsBuilder').style.display = type === 'buttons' ? 'block' : 'none';
+      document.getElementById('selectBuilder').style.display = type === 'select' ? 'block' : 'none';
+    }
+
+    function addButton() {
+      buttonCount++;
+      const buttonsList = document.getElementById('buttonsList');
+      const buttonDiv = document.createElement('div');
+      buttonDiv.className = 'button-config';
+      buttonDiv.innerHTML = `
+        <div class="config-row">
+          <input type="text" placeholder="Label" class="btn-label" required>
+          <select class="btn-style">
+            <option value="1">Primary (Blue)</option>
+            <option value="2">Secondary (Gray)</option>
+            <option value="3">Success (Green)</option>
+            <option value="4">Danger (Red)</option>
+            <option value="5">Link</option>
+          </select>
+          <input type="text" placeholder="Custom ID" class="btn-custom-id">
+          <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.parentElement.remove()">Remove</button>
+        </div>
+      `;
+      buttonsList.appendChild(buttonDiv);
+    }
+
+    function addOption() {
+      optionCount++;
+      const optionsList = document.getElementById('optionsList');
+      const optionDiv = document.createElement('div');
+      optionDiv.className = 'option-config';
+      optionDiv.innerHTML = `
+        <div class="config-row">
+          <input type="text" placeholder="Label" class="opt-label" required>
+          <input type="text" placeholder="Value" class="opt-value" required>
+          <input type="text" placeholder="Description" class="opt-desc">
+          <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.parentElement.remove()">Remove</button>
+        </div>
+      `;
+      optionsList.appendChild(optionDiv);
+    }
+
+    document.getElementById('createComponentsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const type = document.getElementById('componentType').value;
+      let components = [];
+
+      if (type === 'buttons') {
+        const buttons = [];
+        document.querySelectorAll('.button-config').forEach(btn => {
+          const label = btn.querySelector('.btn-label').value;
+          const style = parseInt(btn.querySelector('.btn-style').value);
+          const customId = btn.querySelector('.btn-custom-id').value;
+          
+          buttons.push({
+            type: 2,
+            style: style,
+            label: label,
+            custom_id: customId || `btn_${Math.random().toString(36).substr(2, 9)}`
+          });
+        });
+        
+        if (buttons.length > 0) {
+          components = [{
+            type: 1,
+            components: buttons
+          }];
+        }
+      } else {
+        const options = [];
+        document.querySelectorAll('.option-config').forEach(opt => {
+          const label = opt.querySelector('.opt-label').value;
+          const value = opt.querySelector('.opt-value').value;
+          const description = opt.querySelector('.opt-desc').value;
+          
+          options.push({
+            label: label,
+            value: value,
+            description: description || undefined
+          });
+        });
+        
+        if (options.length > 0) {
+          components = [{
+            type: 1,
+            components: [{
+              type: 3,
+              custom_id: `select_${Math.random().toString(36).substr(2, 9)}`,
+              placeholder: document.getElementById('selectPlaceholder').value || 'Choose an option',
+              options: options
+            }]
+          }];
+        }
+      }
+
+      const data = {
+        channelId: document.getElementById('channelId').value,
+        content: document.getElementById('content').value,
+        components: JSON.stringify(components)
+      };
+      
+      try {
+        const response = await fetch('/components/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          alert('Components sent successfully!');
+          location.reload();
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        alert('Error creating components: ' + error.message);
+      }
+    });
+
+    // Initialize with one button
+    addButton();
+  </script>
+
+  <style>
+    .component-builder {
+      background: var(--bg-tertiary);
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
+
+    .component-builder h4 {
+      margin-top: 0;
+    }
+
+    .button-config,
+    .option-config {
+      margin-bottom: 1rem;
+    }
+
+    .config-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .config-row input,
+    .config-row select {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .examples-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .example-card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    .example-card h3 {
+      margin: 0 0 1rem 0;
+    }
+
+    .example-card pre {
+      background: var(--bg-tertiary);
+      padding: 1rem;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 0.85rem;
+    }
+  </style>
+</body>
+</html>

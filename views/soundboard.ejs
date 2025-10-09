@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soundboard - Discord Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">🎮 Discord Selfbot</div>
+    <div class="nav-links">
+      <a href="/">Dashboard</a>
+      <a href="/voice">Voice</a>
+      <a href="/soundboard" class="active">Soundboard</a>
+      <a href="/settings">Settings</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="header-section">
+      <h1>🔊 Soundboard Manager</h1>
+      <p>Browse and send soundboard sounds</p>
+    </div>
+
+    <div class="glass-card" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);">
+      <h3>🎵 Available Sounds (<%= sounds.length %>)</h3>
+      <p>Send soundboard sounds to voice channels</p>
+    </div>
+
+    <% if (sounds.length === 0) { %>
+      <div class="alert alert-info">
+        <p>No soundboard sounds available. Join servers with soundboard features to see them here!</p>
+      </div>
+    <% } else { %>
+      <div class="sounds-grid">
+        <% sounds.forEach(sound => { %>
+          <div class="sound-card" data-sound-id="<%= sound.id %>">
+            <div class="sound-emoji"><%= sound.emoji || '🔊' %></div>
+            <div class="sound-info">
+              <h4><%= sound.name %></h4>
+              <p class="small-text"><%= sound.guildName %></p>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="sendSound('<%= sound.id %>')">Send</button>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+
+  <div id="sendSoundModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeSendSoundModal()">&times;</span>
+      <h2>Send Sound</h2>
+      <form id="sendSoundForm">
+        <input type="hidden" id="soundId" name="soundId">
+        <div class="form-group">
+          <label for="channelId">Voice Channel ID:</label>
+          <input type="text" id="channelId" name="channelId" required placeholder="Enter voice channel ID">
+        </div>
+        <button type="submit" class="btn btn-primary">Send Sound</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let selectedSoundId = null;
+
+    function sendSound(soundId) {
+      selectedSoundId = soundId;
+      document.getElementById('soundId').value = soundId;
+      document.getElementById('sendSoundModal').style.display = 'block';
+    }
+
+    function closeSendSoundModal() {
+      document.getElementById('sendSoundModal').style.display = 'none';
+    }
+
+    document.getElementById('sendSoundForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData(e.target);
+      const data = {
+        channelId: formData.get('channelId'),
+        soundId: formData.get('soundId')
+      };
+      
+      try {
+        const response = await fetch('/soundboard/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          alert(result.message || 'Sound sent successfully!');
+          closeSendSoundModal();
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        alert('Error sending sound: ' + error.message);
+      }
+    });
+
+    window.onclick = function(event) {
+      const modal = document.getElementById('sendSoundModal');
+      if (event.target == modal) {
+        closeSendSoundModal();
+      }
+    }
+  </script>
+
+  <style>
+    .sounds-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .sound-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+
+    .sound-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .sound-emoji {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .sound-info h4 {
+      margin: 0.5rem 0;
+      font-size: 1.1rem;
+    }
+
+    .small-text {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin: 0.5rem 0;
+    }
+
+    .sound-card .btn {
+      margin-top: 1rem;
+      width: 100%;
+    }
+  </style>
+</body>
+</html>

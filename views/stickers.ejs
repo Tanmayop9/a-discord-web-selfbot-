@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stickers - Discord Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">🎮 Discord Selfbot</div>
+    <div class="nav-links">
+      <a href="/">Dashboard</a>
+      <a href="/servers">Servers</a>
+      <a href="/dms">DMs</a>
+      <a href="/friends">Friends</a>
+      <a href="/stickers" class="active">Stickers</a>
+      <a href="/settings">Settings</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="header-section">
+      <h1>🎨 Sticker Manager</h1>
+      <p>Browse and send stickers from your guilds</p>
+    </div>
+
+    <div class="glass-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+      <h3>📦 Available Stickers (<%= stickers.length %>)</h3>
+      <p>Browse stickers from all your servers</p>
+    </div>
+
+    <% if (stickers.length === 0) { %>
+      <div class="alert alert-info">
+        <p>No stickers available. Join servers with custom stickers to see them here!</p>
+      </div>
+    <% } else { %>
+      <div class="stickers-grid">
+        <% stickers.forEach(sticker => { %>
+          <div class="sticker-card" data-sticker-id="<%= sticker.id %>">
+            <img src="<%= sticker.url %>" alt="<%= sticker.name %>" class="sticker-image">
+            <div class="sticker-info">
+              <h4><%= sticker.name %></h4>
+              <p class="small-text"><%= sticker.guild %></p>
+              <% if (sticker.description) { %>
+                <p class="sticker-desc"><%= sticker.description %></p>
+              <% } %>
+            </div>
+            <button class="btn btn-primary" onclick="sendSticker('<%= sticker.id %>')">Send Sticker</button>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+
+  <div id="sendStickerModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeSendStickerModal()">&times;</span>
+      <h2>Send Sticker</h2>
+      <form id="sendStickerForm">
+        <input type="hidden" id="stickerId" name="stickerId">
+        <div class="form-group">
+          <label for="channelId">Channel ID:</label>
+          <input type="text" id="channelId" name="channelId" required placeholder="Enter channel ID">
+        </div>
+        <button type="submit" class="btn btn-primary">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let selectedStickerId = null;
+
+    function sendSticker(stickerId) {
+      selectedStickerId = stickerId;
+      document.getElementById('stickerId').value = stickerId;
+      document.getElementById('sendStickerModal').style.display = 'block';
+    }
+
+    function closeSendStickerModal() {
+      document.getElementById('sendStickerModal').style.display = 'none';
+    }
+
+    document.getElementById('sendStickerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData(e.target);
+      const data = {
+        channelId: formData.get('channelId'),
+        stickerId: formData.get('stickerId')
+      };
+      
+      try {
+        const response = await fetch('/stickers/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          alert('Sticker sent successfully!');
+          closeSendStickerModal();
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        alert('Error sending sticker: ' + error.message);
+      }
+    });
+
+    window.onclick = function(event) {
+      const modal = document.getElementById('sendStickerModal');
+      if (event.target == modal) {
+        closeSendStickerModal();
+      }
+    }
+  </script>
+
+  <style>
+    .stickers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .sticker-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+      transition: transform 0.2s;
+    }
+
+    .sticker-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .sticker-image {
+      width: 100%;
+      max-width: 160px;
+      height: 160px;
+      object-fit: contain;
+      margin-bottom: 1rem;
+    }
+
+    .sticker-info h4 {
+      margin: 0.5rem 0;
+      font-size: 1.1rem;
+    }
+
+    .small-text {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin: 0.25rem 0;
+    }
+
+    .sticker-desc {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin: 0.5rem 0;
+    }
+  </style>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Message Scheduler - Discord Web Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/analytics">📊 Analytics</a></li>
+        <li><a href="/scheduler">⏰ Scheduler</a></li>
+        <li><a href="/embed-builder">🎨 Embed Builder</a></li>
+      </ul>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-header">⏰ Schedule Message</div>
+      
+      <form onsubmit="event.preventDefault(); scheduleMessage();">
+        <div class="form-group">
+          <label class="form-label">Channel ID</label>
+          <input type="text" class="form-control" id="channelId" placeholder="Enter channel ID" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Message</label>
+          <textarea class="form-control" id="message" placeholder="Message to send..." rows="4" required></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Schedule Time</label>
+          <input type="datetime-local" class="form-control" id="timestamp" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Schedule Message</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header">📋 Scheduled Messages (<%= scheduledMessages.length %>)</div>
+      
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Channel</th>
+            <th>Message</th>
+            <th>Scheduled For</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% scheduledMessages.forEach(sm => { %>
+          <tr>
+            <td><%= sm.channelName %></td>
+            <td><%= sm.message.substring(0, 50) %><%= sm.message.length > 50 ? '...' : '' %></td>
+            <td><%= new Date(sm.scheduleTime).toLocaleString() %></td>
+            <td>
+              <button class="btn btn-sm btn-danger" onclick="deleteScheduled(<%= sm.id %>)">Cancel</button>
+            </td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+      
+      <% if (scheduledMessages.length === 0) { %>
+      <p class="text-center" style="color: var(--text-muted); padding: 40px;">
+        No scheduled messages.
+      </p>
+      <% } %>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    async function scheduleMessage() {
+      const channelId = document.getElementById('channelId').value;
+      const message = document.getElementById('message').value;
+      const timestamp = document.getElementById('timestamp').value;
+      
+      try {
+        await apiCall('/scheduler/add', 'POST', { channelId, message, timestamp });
+        showNotification('Message scheduled!', 'success');
+        setTimeout(() => location.reload(), 1000);
+      } catch (error) {
+        // Error already shown
+      }
+    }
+    
+    async function deleteScheduled(id) {
+      if (!confirm('Cancel this scheduled message?')) return;
+      
+      try {
+        await apiCall('/scheduler/delete', 'POST', { id });
+        showNotification('Scheduled message cancelled!', 'success');
+        setTimeout(() => location.reload(), 1000);
+      } catch (error) {
+        // Error already shown
+      }
+    }
+  </script>
+</body>
+</html>

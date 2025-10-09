@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= channel.name %> - Discord Web Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/servers">← Back to Servers</a></li>
+        <li><a href="/server/<%= serverId %>">← Back to Server</a></li>
+      </ul>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-header"># <%= channel.name %></div>
+      
+      <div class="message-list" id="messageList">
+        <% messages.forEach(msg => { %>
+        <div class="message" id="msg-<%= msg.id %>">
+          <img src="<%= msg.authorAvatar %>" alt="<%= msg.author %>" class="message-avatar">
+          <div class="message-content">
+            <div class="message-header">
+              <span class="message-author"><%= msg.author %></span>
+              <span class="message-timestamp"><%= msg.timestamp %></span>
+            </div>
+            <div class="message-text" id="content-<%= msg.id %>"><%= msg.content %></div>
+            
+            <% if (msg.attachments && msg.attachments.length > 0) { %>
+            <div class="message-attachment">
+              <% msg.attachments.forEach(att => { %>
+              <% if (att.contentType && att.contentType.startsWith('image/')) { %>
+              <img src="<%= att.url %>" alt="<%= att.name %>">
+              <% } else { %>
+              <a href="<%= att.url %>" target="_blank"><%= att.name %> (<%= (att.size / 1024).toFixed(2) %> KB)</a>
+              <% } %>
+              <% }); %>
+            </div>
+            <% } %>
+            
+            <% if (msg.reactions && msg.reactions.length > 0) { %>
+            <div class="message-actions">
+              <% msg.reactions.forEach(reaction => { %>
+              <span class="btn btn-sm btn-secondary"><%= reaction.emoji %> <%= reaction.count %></span>
+              <% }); %>
+            </div>
+            <% } %>
+            
+            <% if (msg.editable) { %>
+            <div class="message-actions">
+              <button class="btn btn-sm btn-primary" onclick="editMsg('<%= msg.id %>')">Edit</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteMessage('<%= channel.id %>', '<%= msg.id %>').then(success => { if(success) document.getElementById('msg-<%= msg.id %>').remove(); })">Delete</button>
+            </div>
+            <% } %>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+      
+      <form onsubmit="event.preventDefault(); sendMsg();" class="mt-2">
+        <div class="form-group">
+          <textarea class="form-control" id="messageInput" placeholder="Type a message..." rows="3"></textarea>
+        </div>
+        <div class="flex gap-1">
+          <button type="submit" class="btn btn-primary">Send Message</button>
+          <button type="button" class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">Upload File</button>
+          <input type="file" id="fileInput" style="display: none;" onchange="uploadFile()">
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    const channelId = '<%= channel.id %>';
+    
+    async function sendMsg() {
+      const input = document.getElementById('messageInput');
+      const message = input.value.trim();
+      if (message) {
+        const success = await sendMessage(channelId, message);
+        if (success) {
+          input.value = '';
+          setTimeout(() => location.reload(), 500);
+        }
+      }
+    }
+    
+    function editMsg(messageId) {
+      const contentDiv = document.getElementById('content-' + messageId);
+      const currentContent = contentDiv.textContent;
+      const newContent = prompt('Edit message:', currentContent);
+      if (newContent && newContent !== currentContent) {
+        editMessage(channelId, messageId, newContent).then(success => {
+          if (success) {
+            contentDiv.textContent = newContent;
+          }
+        });
+      }
+    }
+    
+    async function uploadFile() {
+      const fileInput = document.getElementById('fileInput');
+      const file = fileInput.files[0];
+      if (!file) return;
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('channelId', channelId);
+      
+      try {
+        const response = await fetch('/send-message', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (response.ok) {
+          showNotification('File uploaded!', 'success');
+          setTimeout(() => location.reload(), 500);
+        } else {
+          showNotification('Upload failed!', 'danger');
+        }
+      } catch (error) {
+        showNotification('Upload error: ' + error.message, 'danger');
+      }
+    }
+    
+    // Auto-scroll to bottom
+    scrollToBottom('messageList');
+    
+    // Listen for new messages
+    socket.on('newMessage', (data) => {
+      if (data.channelId === channelId) {
+        setTimeout(() => location.reload(), 1000);
+      }
+    });
+  </script>
+</body>
+</html>

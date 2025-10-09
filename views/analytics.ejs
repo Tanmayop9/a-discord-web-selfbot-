@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics - Discord Web Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/analytics">📊 Analytics</a></li>
+        <li><a href="/auto-responder">🤖 Auto-Responder</a></li>
+        <li><a href="/scheduler">⏰ Scheduler</a></li>
+        <li><a href="/sniper">🎯 Sniper</a></li>
+        <li><a href="/custom-commands">⚡ Commands</a></li>
+      </ul>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-header">📊 Message Analytics</div>
+      
+      <div class="grid grid-4">
+        <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+          <h3 style="color: white;">Messages Sent</h3>
+          <p class="text-center" style="font-size: 2.5rem; color: white; margin-top: 10px;"><%= stats.sent %></p>
+        </div>
+        
+        <div class="card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+          <h3 style="color: white;">Messages Received</h3>
+          <p class="text-center" style="font-size: 2.5rem; color: white; margin-top: 10px;"><%= stats.received %></p>
+        </div>
+        
+        <div class="card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+          <h3 style="color: white;">Messages Deleted</h3>
+          <p class="text-center" style="font-size: 2.5rem; color: white; margin-top: 10px;"><%= stats.deleted %></p>
+        </div>
+        
+        <div class="card" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);">
+          <h3 style="color: white;">Messages Edited</h3>
+          <p class="text-center" style="font-size: 2.5rem; color: white; margin-top: 10px;"><%= stats.edited %></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">🔥 Top Active Channels</div>
+      
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Channel</th>
+            <th>Sent</th>
+            <th>Received</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% topChannels.forEach(ch => { %>
+          <tr>
+            <td><strong><%= ch.channelName %></strong></td>
+            <td><%= ch.sent %></td>
+            <td><%= ch.received %></td>
+            <td><strong><%= ch.total %></strong></td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+      
+      <% if (topChannels.length === 0) { %>
+      <p class="text-center" style="color: var(--text-muted); padding: 40px;">
+        No channel activity yet.
+      </p>
+      <% } %>
+    </div>
+
+    <div class="card">
+      <div class="card-header">📝 Recent Activity (Last 50)</div>
+      
+      <div class="message-list" style="max-height: 400px;">
+        <% activityLogs.forEach(log => { %>
+        <div class="card" style="margin-bottom: 10px; padding: 10px;">
+          <div style="font-size: 0.9rem;">
+            <span class="badge badge-<%= log.type === 'message' ? 'success' : 'warning' %>"><%= log.type %></span>
+            <span style="color: var(--text-muted); margin-left: 10px;">
+              <%= new Date(log.timestamp).toLocaleString() %>
+            </span>
+          </div>
+          <% if (log.content) { %>
+          <p style="margin-top: 5px; color: var(--text-primary);">
+            <%= log.content %>
+          </p>
+          <% } %>
+        </div>
+        <% }); %>
+      </div>
+      
+      <% if (activityLogs.length === 0) { %>
+      <p class="text-center" style="color: var(--text-muted); padding: 40px;">
+        No activity logged yet.
+      </p>
+      <% } %>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billing - Discord Web Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/billing">Billing</a></li>
+      </ul>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-header">💳 Billing Information</div>
+      
+      <% if (error) { %>
+      <div class="alert alert-danger">
+        <%= error %>
+      </div>
+      <% } %>
+      
+      <table class="table">
+        <tr>
+          <td><strong>Nitro Type:</strong></td>
+          <td>
+            <%= billing.premiumType === 0 ? 'None' : billing.premiumType === 1 ? 'Nitro Classic' : billing.premiumType === 2 ? 'Nitro' : 'Unknown' %>
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Nitro Since:</strong></td>
+          <td><%= billing.premiumGuildSince || 'Never' %></td>
+        </tr>
+      </table>
+      
+      <div class="alert alert-info">
+        ℹ️ <strong>Note:</strong> Full billing information is not accessible through selfbots for security reasons.
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Profile - Discord Web Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/servers">Servers</a></li>
+        <li><a href="/dms">DMs</a></li>
+        <li><a href="/friends">Friends</a></li>
+        <li><a href="/user-info">Profile</a></li>
+      </ul>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="card">
+      <div class="card-header">👤 User Profile</div>
+      
+      <div class="flex gap-2" style="align-items: flex-start;">
+        <img src="<%= user.displayAvatarURL({ dynamic: true, size: 128 }) %>" alt="<%= user.tag %>" style="width: 128px; height: 128px; border-radius: 50%;">
+        
+        <div style="flex: 1;">
+          <h2><%= user.tag %></h2>
+          <p style="color: var(--text-secondary);">ID: <%= user.id %></p>
+          
+          <table class="table mt-2">
+            <tr>
+              <td><strong>Email:</strong></td>
+              <td><%= email %></td>
+            </tr>
+            <tr>
+              <td><strong>Phone:</strong></td>
+              <td><%= phone %></td>
+            </tr>
+            <tr>
+              <td><strong>Verified:</strong></td>
+              <td><%= verified ? '✅ Yes' : '❌ No' %></td>
+            </tr>
+            <tr>
+              <td><strong>2FA Enabled:</strong></td>
+              <td><%= mfaEnabled ? '✅ Yes' : '❌ No' %></td>
+            </tr>
+            <tr>
+              <td><strong>Nitro:</strong></td>
+              <td>
+                <%= nitroType %>
+                <% if (premiumType > 0) { %>
+                <span class="badge badge-partnered">💎</span>
+                <% } %>
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Accent Color:</strong></td>
+              <td>
+                <% if (accentColor) { %>
+                <span style="display: inline-block; width: 20px; height: 20px; background-color: #<%= accentColor.toString(16).padStart(6, '0') %>; border-radius: 4px;"></span>
+                #<%= accentColor.toString(16).padStart(6, '0') %>
+                <% } else { %>
+                Not set
+                <% } %>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      
+      <% if (banner) { %>
+      <div class="mt-2">
+        <h4>Banner</h4>
+        <img src="<%= banner %>" alt="Banner" style="width: 100%; max-width: 600px; border-radius: 8px;">
+      </div>
+      <% } %>
+    </div>
+
+    <div class="card">
+      <div class="card-header">📝 Edit Bio</div>
+      <form onsubmit="event.preventDefault(); updateBioForm();">
+        <div class="form-group">
+          <label class="form-label">Bio</label>
+          <textarea class="form-control" id="bioInput" placeholder="Tell us about yourself..."><%= bio %></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Update Bio</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header">🎨 Customize Profile</div>
+      
+      <div class="form-group">
+        <label class="form-label">Avatar URL</label>
+        <input type="text" class="form-control" id="avatarUrl" placeholder="https://example.com/avatar.png">
+        <button class="btn btn-primary mt-1" onclick="updateAvatarForm()">Update Avatar</button>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Banner URL (Nitro Required)</label>
+        <input type="text" class="form-control" id="bannerUrl" placeholder="https://example.com/banner.png">
+        <button class="btn btn-primary mt-1" onclick="updateBannerForm()">Update Banner</button>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Accent Color (Nitro Required)</label>
+        <input type="color" id="accentColor" value="#<%= accentColor ? accentColor.toString(16).padStart(6, '0') : '5865f2' %>">
+        <button class="btn btn-primary mt-1" onclick="updateAccentColorForm()">Update Color</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">🏠 HypeSquad House</div>
+      <p>Join a HypeSquad house to show your support!</p>
+      <div class="flex gap-1">
+        <button class="btn btn-primary" onclick="updateHypeSquad(1)">🔵 Bravery</button>
+        <button class="btn btn-danger" onclick="updateHypeSquad(2)">🔴 Brilliance</button>
+        <button class="btn btn-success" onclick="updateHypeSquad(3)">🟢 Balance</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    function updateBioForm() {
+      const bio = document.getElementById('bioInput').value;
+      updateBio(bio);
+    }
+    
+    async function updateAvatarForm() {
+      const avatarUrl = document.getElementById('avatarUrl').value;
+      if (!avatarUrl) {
+        showNotification('Please enter an avatar URL', 'warning');
+        return;
+      }
+      try {
+        await apiCall('/update-avatar', 'POST', { avatar: avatarUrl });
+        showNotification('Avatar updated! Refreshing...', 'success');
+        setTimeout(() => location.reload(), 1500);
+      } catch (error) {
+        // Error already shown
+      }
+    }
+    
+    async function updateBannerForm() {
+      const bannerUrl = document.getElementById('bannerUrl').value;
+      if (!bannerUrl) {
+        showNotification('Please enter a banner URL', 'warning');
+        return;
+      }
+      try {
+        await apiCall('/update-banner', 'POST', { banner: bannerUrl });
+        showNotification('Banner updated! Refreshing...', 'success');
+        setTimeout(() => location.reload(), 1500);
+      } catch (error) {
+        // Error already shown
+      }
+    }
+    
+    async function updateAccentColorForm() {
+      const color = document.getElementById('accentColor').value;
+      try {
+        await apiCall('/update-accent-color', 'POST', { color });
+        showNotification('Accent color updated! Refreshing...', 'success');
+        setTimeout(() => location.reload(), 1500);
+      } catch (error) {
+        // Error already shown
+      }
+    }
+  </script>
+</body>
+</html>

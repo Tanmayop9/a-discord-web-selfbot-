@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guild Discovery - Discord Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">🎮 Discord Selfbot</div>
+    <div class="nav-links">
+      <a href="/">Dashboard</a>
+      <a href="/servers">Servers</a>
+      <a href="/guild-discovery" class="active">Discovery</a>
+      <a href="/settings">Settings</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="header-section">
+      <h1>🌐 Guild Discovery</h1>
+      <p>Browse and join public Discord servers</p>
+    </div>
+
+    <div class="glass-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+      <h3>🔍 Join Server</h3>
+      <form id="joinServerForm">
+        <div class="form-group">
+          <label for="inviteCode">Invite Code or URL:</label>
+          <input type="text" id="inviteCode" name="inviteCode" required placeholder="Enter invite code (e.g., discord-api or https://discord.gg/discord-api)">
+        </div>
+        <button type="submit" class="btn btn-primary">Join Server</button>
+      </form>
+    </div>
+
+    <div class="discovery-section">
+      <h2>🌟 Discover Servers</h2>
+      <p class="info-text">Use Discord's discovery page or invite links to join new servers!</p>
+      
+      <div class="categories-grid">
+        <div class="category-card">
+          <h3>🎮 Gaming</h3>
+          <p>Find gaming communities and clans</p>
+        </div>
+        <div class="category-card">
+          <h3>🎵 Music</h3>
+          <p>Discuss and share music</p>
+        </div>
+        <div class="category-card">
+          <h3>🎓 Education</h3>
+          <p>Learning and study groups</p>
+        </div>
+        <div class="category-card">
+          <h3>🎨 Creative Arts</h3>
+          <p>Art, design, and creativity</p>
+        </div>
+        <div class="category-card">
+          <h3>💻 Technology</h3>
+          <p>Tech discussions and coding</p>
+        </div>
+        <div class="category-card">
+          <h3>🌍 Community</h3>
+          <p>General communities</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-info" style="margin-top: 2rem;">
+      <p><strong>ℹ️ Note:</strong> Guild discovery features are limited in selfbots. Use invite codes to join specific servers.</p>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('joinServerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData(e.target);
+      let inviteCode = formData.get('inviteCode');
+      
+      // Extract invite code from URL if provided
+      if (inviteCode.includes('discord.gg/')) {
+        inviteCode = inviteCode.split('discord.gg/')[1].split(/[?#]/)[0];
+      } else if (inviteCode.includes('discord.com/invite/')) {
+        inviteCode = inviteCode.split('discord.com/invite/')[1].split(/[?#]/)[0];
+      }
+      
+      try {
+        const response = await fetch('/guild-discovery/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inviteCode })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          alert(`Joined server: ${result.guildName}!`);
+          window.location.href = '/servers';
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        alert('Error joining server: ' + error.message);
+      }
+    });
+  </script>
+
+  <style>
+    .discovery-section {
+      margin-top: 2rem;
+    }
+
+    .info-text {
+      color: var(--text-secondary);
+      margin: 1rem 0;
+    }
+
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .category-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+
+    .category-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .category-card h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.3rem;
+    }
+
+    .category-card p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+  </style>
+</body>
+</html>

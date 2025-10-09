@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Settings - Discord Selfbot</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-brand">🎮 Discord Selfbot</div>
+    <div class="nav-links">
+      <a href="/">Dashboard</a>
+      <a href="/settings">Settings</a>
+      <a href="/advanced-settings" class="active">Advanced</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="header-section">
+      <h1>⚙️ Advanced Settings Manager</h1>
+      <p>Fine-tune your Discord experience</p>
+    </div>
+
+    <div class="settings-sections">
+      <div class="settings-section">
+        <div class="glass-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+          <h3>🎨 Appearance</h3>
+          <div class="setting-item">
+            <label for="theme">Theme:</label>
+            <select id="theme" onchange="updateSetting('theme', this.value)">
+              <option value="dark" <%= settings.theme === 'dark' ? 'selected' : '' %>>Dark</option>
+              <option value="light" <%= settings.theme === 'light' ? 'selected' : '' %>>Light</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <label>
+              <input type="checkbox" <%= settings.compactMode ? 'checked' : '' %> onchange="updateSetting('compactMode', this.checked)">
+              Compact Mode
+            </label>
+          </div>
+          <div class="setting-item">
+            <label>
+              <input type="checkbox" <%= settings.messageDisplayCompact ? 'checked' : '' %> onchange="updateSetting('messageDisplayCompact', this.checked)">
+              Compact Message Display
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="glass-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+          <h3>💬 Text & Images</h3>
+          <div class="setting-item">
+            <label>
+              <input type="checkbox" <%= settings.showEmbeds ? 'checked' : '' %> onchange="updateSetting('showEmbeds', this.checked)">
+              Show Embeds
+            </label>
+          </div>
+          <div class="setting-item">
+            <label>
+              <input type="checkbox" <%= settings.renderEmbeds ? 'checked' : '' %> onchange="updateSetting('renderEmbeds', this.checked)">
+              Render Embeds
+            </label>
+          </div>
+          <div class="setting-item">
+            <label>
+              <input type="checkbox" <%= settings.animatedEmojis ? 'checked' : '' %> onchange="updateSetting('animatedEmojis', this.checked)">
+              Animated Emojis
+            </label>
+          </div>
+          <div class="setting-item">
+            <label>
+              <input type="checkbox" <%= settings.convertEmoticons ? 'checked' : '' %> onchange="updateSetting('convertEmoticons', this.checked)">
+              Convert Emoticons :)
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="glass-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+          <h3>🔒 Privacy & Safety</h3>
+          <div class="setting-item">
+            <label for="explicitFilter">Explicit Content Filter:</label>
+            <select id="explicitFilter" onchange="updateSetting('explicitContentFilter', this.value)">
+              <option value="DISABLED" <%= settings.explicitContentFilter === 'DISABLED' ? 'selected' : '' %>>Don't scan</option>
+              <option value="FRIENDS_WITHOUT_FRIENDS" <%= settings.explicitContentFilter === 'FRIENDS_WITHOUT_FRIENDS' ? 'selected' : '' %>>Scan from non-friends</option>
+              <option value="ALL" <%= settings.explicitContentFilter === 'ALL' ? 'selected' : '' %>>Scan all messages</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="glass-card" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+          <h3>🌍 Language & Region</h3>
+          <div class="setting-item">
+            <label for="locale">Language:</label>
+            <select id="locale" onchange="updateSetting('locale', this.value)">
+              <option value="en-US" <%= settings.locale === 'en-US' ? 'selected' : '' %>>English (US)</option>
+              <option value="en-GB" <%= settings.locale === 'en-GB' ? 'selected' : '' %>>English (UK)</option>
+              <option value="es-ES" <%= settings.locale === 'es-ES' ? 'selected' : '' %>>Español</option>
+              <option value="fr-FR" <%= settings.locale === 'fr-FR' ? 'selected' : '' %>>Français</option>
+              <option value="de-DE" <%= settings.locale === 'de-DE' ? 'selected' : '' %>>Deutsch</option>
+              <option value="ja-JP" <%= settings.locale === 'ja-JP' ? 'selected' : '' %>>日本語</option>
+              <option value="ko-KR" <%= settings.locale === 'ko-KR' ? 'selected' : '' %>>한국어</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-info" style="margin-top: 2rem;">
+      <p><strong>ℹ️ Note:</strong> Some settings are stored locally and may not sync with Discord's servers. Full settings control requires desktop client features.</p>
+    </div>
+  </div>
+
+  <script>
+    async function updateSetting(setting, value) {
+      try {
+        const response = await fetch('/advanced-settings/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ setting, value })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          console.log(`Updated ${setting} to ${value}`);
+        } else {
+          alert('Error: ' + result.error);
+        }
+      } catch (error) {
+        alert('Error updating setting: ' + error.message);
+      }
+    }
+  </script>
+
+  <style>
+    .settings-sections {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .settings-section .glass-card {
+      height: 100%;
+    }
+
+    .settings-section h3 {
+      margin-top: 0;
+    }
+
+    .setting-item {
+      margin: 1.5rem 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .setting-item label {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+    }
+
+    .setting-item select {
+      flex: 1;
+      max-width: 200px;
+    }
+
+    .setting-item input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+  </style>
+</body>
+</html>

@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discord Web Selfbot - Dashboard</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <a href="/" class="nav-brand">🎮 Discord Selfbot</a>
+      <ul class="nav-links">
+        <li><a href="/">Dashboard</a></li>
+        <li><a href="/servers">Servers</a></li>
+        <li><a href="/dms">DMs</a></li>
+        <li><a href="/friends">Friends</a></li>
+        <li><a href="/voice">Voice</a></li>
+        <li><a href="/analytics">📊 Analytics</a></li>
+        <li><a href="/auto-responder">🤖 Auto-Responder</a></li>
+        <li><a href="/scheduler">⏰ Scheduler</a></li>
+        <li><a href="/sniper">🎯 Sniper</a></li>
+        <li><a href="/embed-builder">🎨 Embed Builder</a></li>
+        <li><a href="/settings">Settings</a></li>
+        <li><a href="/user-info">Profile</a></li>
+      </ul>
+      <% if (botReady && user) { %>
+      <div class="user-info">
+        <img src="<%= user.displayAvatarURL({ dynamic: true }) %>" alt="<%= user.tag %>" class="user-avatar">
+        <span><%= user.tag %></span>
+        <span class="status-indicator status-<%= status %>"></span>
+      </div>
+      <% } %>
+    </div>
+  </nav>
+
+  <div class="container">
+    <% if (!botReady) { %>
+    <div class="alert alert-warning">
+      ⚠️ Bot is not ready yet. Please wait for the connection to establish...
+    </div>
+    <% } else { %>
+    
+    <div class="card">
+      <div class="card-header">📊 Dashboard</div>
+      
+      <div class="grid grid-3">
+        <div class="card">
+          <h3>🏰 Servers</h3>
+          <p class="text-center" style="font-size: 2rem; color: var(--accent);"><%= user.client.guilds.cache.size %></p>
+        </div>
+        
+        <div class="card">
+          <h3>👥 Friends</h3>
+          <p class="text-center" style="font-size: 2rem; color: var(--success);"><%= user.client.relationships?.cache?.filter(r => r.type === 'FRIEND').size || 0 %></p>
+        </div>
+        
+        <div class="card">
+          <h3>💬 DMs</h3>
+          <p class="text-center" style="font-size: 2rem; color: var(--warning);"><%= user.client.channels.cache.filter(c => c.type === 'DM').size %></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">⚡ Ultra Advanced Features</div>
+      
+      <div class="grid grid-4">
+        <a href="/analytics" class="card" style="text-decoration: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+          <h3 style="color: white;">📊 Analytics</h3>
+          <p style="color: white;">Message stats & activity tracking</p>
+        </a>
+        
+        <a href="/auto-responder" class="card" style="text-decoration: none; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+          <h3 style="color: white;">🤖 Auto-Responder</h3>
+          <p style="color: white;">Automated message responses</p>
+        </a>
+        
+        <a href="/scheduler" class="card" style="text-decoration: none; background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+          <h3 style="color: white;">⏰ Scheduler</h3>
+          <p style="color: white;">Schedule messages for later</p>
+        </a>
+        
+        <a href="/afk" class="card" style="text-decoration: none; background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);">
+          <h3 style="color: white;">🌙 AFK Mode</h3>
+          <p style="color: white;">Auto-respond when away</p>
+        </a>
+        
+        <a href="/sniper" class="card" style="text-decoration: none; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+          <h3 style="color: white;">🎯 Message Sniper</h3>
+          <p style="color: white;">Track deleted/edited messages</p>
+        </a>
+        
+        <a href="/custom-commands" class="card" style="text-decoration: none; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+          <h3 style="color: white;">⚡ Custom Commands</h3>
+          <p style="color: white;">Create command shortcuts</p>
+        </a>
+        
+        <a href="/embed-builder" class="card" style="text-decoration: none; background: linear-gradient(135deg, #fa8bff 0%, #2bd2ff 90%, #2bff88 100%);">
+          <h3 style="color: white;">🎨 Embed Builder</h3>
+          <p style="color: white;">Visual embed creator</p>
+        </a>
+        
+        <a href="/mass-dm" class="card" style="text-decoration: none; background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);">
+          <h3 style="color: white;">📬 Mass DM</h3>
+          <p style="color: white;">Bulk direct messaging</p>
+        </a>
+        
+        <a href="/token-checker" class="card" style="text-decoration: none; background: linear-gradient(135deg, #fddb92 0%, #d1fdff 100%);">
+          <h3 style="color: #333;">🔐 Token Checker</h3>
+          <p style="color: #333;">Validate Discord tokens</p>
+        </a>
+        
+        <a href="/slash-commands" class="card" style="text-decoration: none; background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+          <h3 style="color: #333;">⚔️ Slash Commands</h3>
+          <p style="color: #333;">View available commands</p>
+        </a>
+        
+        <a href="/activity-logs" class="card" style="text-decoration: none; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
+          <h3 style="color: #333;">📜 Activity Logs</h3>
+          <p style="color: #333;">Comprehensive logging</p>
+        </a>
+        
+        <a href="/templates" class="card" style="text-decoration: none; background: linear-gradient(135deg, #ee9ca7 0%, #ffdde1 100%);">
+          <h3 style="color: #333;">📝 Templates</h3>
+          <p style="color: #333;">Message templates</p>
+        </a>
+        
+        <a href="/search" class="card" style="text-decoration: none; background: linear-gradient(135deg, #667db6 0%, #0082c8 100%);">
+          <h3 style="color: white;">🔍 Search</h3>
+          <p style="color: white;">Advanced message search</p>
+        </a>
+        
+        <a href="/multi-account" class="card" style="text-decoration: none; background: linear-gradient(135deg, #e65c00 0%, #f9d423 100%);">
+          <h3 style="color: #333;">👥 Multi-Account</h3>
+          <p style="color: #333;">Manage multiple tokens</p>
+        </a>
+        
+        <a href="/raid-protection" class="card" style="text-decoration: none; background: linear-gradient(135deg, #cc2b5e 0%, #753a88 100%);">
+          <h3 style="color: white;">🛡️ Raid Protection</h3>
+          <p style="color: white;">Anti-raid tools</p>
+        </a>
+        
+        <a href="/backup-manager" class="card" style="text-decoration: none; background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);">
+          <h3 style="color: white;">💾 Backups</h3>
+          <p style="color: white;">Backup & restore</p>
+        </a>
+        
+        <a href="/stickers" class="card" style="text-decoration: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+          <h3 style="color: white;">🎨 Stickers</h3>
+          <p style="color: white;">Send custom stickers</p>
+        </a>
+        
+        <a href="/threads" class="card" style="text-decoration: none; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+          <h3 style="color: white;">🧵 Threads</h3>
+          <p style="color: white;">Manage threads</p>
+        </a>
+        
+        <a href="/stage-channels" class="card" style="text-decoration: none; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+          <h3 style="color: white;">🎙️ Stage Channels</h3>
+          <p style="color: white;">Join stage events</p>
+        </a>
+        
+        <a href="/streaming" class="card" style="text-decoration: none; background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+          <h3 style="color: #333;">📹 Streaming</h3>
+          <p style="color: #333;">Voice & video streaming</p>
+        </a>
+        
+        <a href="/nitro" class="card" style="text-decoration: none; background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);">
+          <h3 style="color: white;">💎 Nitro</h3>
+          <p style="color: white;">Nitro features</p>
+        </a>
+        
+        <a href="/guild-discovery" class="card" style="text-decoration: none; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+          <h3 style="color: white;">🌐 Discovery</h3>
+          <p style="color: white;">Browse servers</p>
+        </a>
+        
+        <a href="/components" class="card" style="text-decoration: none; background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+          <h3 style="color: #333;">🎮 Components</h3>
+          <p style="color: #333;">Message buttons & menus</p>
+        </a>
+        
+        <a href="/soundboard" class="card" style="text-decoration: none; background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);">
+          <h3 style="color: white;">🔊 Soundboard</h3>
+          <p style="color: white;">Send soundboard sounds</p>
+        </a>
+        
+        <a href="/advanced-settings" class="card" style="text-decoration: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+          <h3 style="color: white;">⚙️ Advanced Settings</h3>
+          <p style="color: white;">Fine-tune preferences</p>
+        </a>
+        
+        <a href="/mobile-presence" class="card" style="text-decoration: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+          <h3 style="color: white;">📱 Mobile Presence</h3>
+          <p style="color: white;">Device status simulator</p>
+        </a>
+        
+        <a href="/bot-creator" class="card" style="text-decoration: none; background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%);">
+          <h3 style="color: white;">🤖 Bot Creator</h3>
+          <p style="color: white;">Create multiple bots instantly</p>
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">👤 User Status</div>
+      
+      <div class="form-group">
+        <label class="form-label">Online Status</label>
+        <div class="flex gap-1">
+          <button class="btn btn-success btn-sm" onclick="updateStatus('online')">Online</button>
+          <button class="btn btn-warning btn-sm" onclick="updateStatus('idle')">Idle</button>
+          <button class="btn btn-danger btn-sm" onclick="updateStatus('dnd')">DND</button>
+          <button class="btn btn-secondary btn-sm" onclick="updateStatus('invisible')">Invisible</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">✨ Custom Status</div>
+      
+      <form onsubmit="event.preventDefault(); updateCustomStatusForm();">
+        <div class="form-group">
+          <label class="form-label">Emoji (optional)</label>
+          <input type="text" class="form-control" id="statusEmoji" placeholder="😊">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Status Text</label>
+          <input type="text" class="form-control" id="statusText" placeholder="Playing games...">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Clear After (optional)</label>
+          <select class="form-control" id="statusExpiry">
+            <option value="">Never</option>
+            <option value="30">30 minutes</option>
+            <option value="60">1 hour</option>
+            <option value="240">4 hours</option>
+            <option value="1440">Today</option>
+          </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Update Custom Status</button>
+        <button type="button" class="btn btn-secondary" onclick="clearActivities()">Clear Status</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header">🎮 Rich Presence (RPC)</div>
+      
+      <form onsubmit="event.preventDefault(); updateRPCForm();">
+        <div class="form-group">
+          <label class="form-label">Activity Name</label>
+          <input type="text" class="form-control" id="rpcName" placeholder="My Custom Game">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Details</label>
+          <input type="text" class="form-control" id="rpcDetails" placeholder="Playing ranked">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">State</label>
+          <input type="text" class="form-control" id="rpcState" placeholder="In a match">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Application ID</label>
+          <input type="text" class="form-control" id="rpcAppId" placeholder="123456789012345678">
+        </div>
+        
+        <div class="grid grid-2">
+          <div class="form-group">
+            <label class="form-label">Large Image</label>
+            <input type="text" class="form-control" id="rpcLargeImage" placeholder="Image key or URL">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Large Image Text</label>
+            <input type="text" class="form-control" id="rpcLargeText" placeholder="Hover text">
+          </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Update Rich Presence</button>
+        <button type="button" class="btn btn-secondary" onclick="clearActivities()">Clear RPC</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-header">ℹ️ Account Information</div>
+      
+      <table class="table">
+        <tr>
+          <td><strong>Username:</strong></td>
+          <td><%= user.tag %></td>
+        </tr>
+        <tr>
+          <td><strong>User ID:</strong></td>
+          <td><%= user.id %></td>
+        </tr>
+        <tr>
+          <td><strong>Nitro:</strong></td>
+          <td><%= user.nitroType || 'None' %></td>
+        </tr>
+        <tr>
+          <td><strong>Email:</strong></td>
+          <td><%= user.email || 'Not available' %></td>
+        </tr>
+        <tr>
+          <td><strong>Verified:</strong></td>
+          <td><%= user.verified ? '✅ Yes' : '❌ No' %></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="alert alert-warning">
+      ⚠️ <strong>Warning:</strong> Using selfbots violates Discord's Terms of Service. This tool is for educational purposes only. Use at your own risk!
+    </div>
+
+    <% } %>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    function updateCustomStatusForm() {
+      const emoji = document.getElementById('statusEmoji').value;
+      const text = document.getElementById('statusText').value;
+      const expiry = document.getElementById('statusExpiry').value;
+      
+      let expiresAt = null;
+      if (expiry) {
+        expiresAt = new Date(Date.now() + parseInt(expiry) * 60000).toISOString();
+      }
+      
+      updateCustomStatus(emoji, text, expiresAt);
+    }
+    
+    function updateRPCForm() {
+      const data = {
+        name: document.getElementById('rpcName').value,
+        details: document.getElementById('rpcDetails').value,
+        state: document.getElementById('rpcState').value,
+        appId: document.getElementById('rpcAppId').value,
+        largeImage: document.getElementById('rpcLargeImage').value,
+        largeText: document.getElementById('rpcLargeText').value
+      };
+      
+      updateRPC(data);
+    }
+    
+    // Theme Switcher
+    function toggleThemeSwitcher() {
+      const switcher = document.getElementById('themeSwitcher');
+      switcher.classList.toggle('active');
+    }
+    
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+      fetch('/theme/set', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme })
+      });
+      showNotification(`Theme changed to ${theme}`, 'success');
+    }
+    
+    // Notification Center
+    function toggleNotifications() {
+      const center = document.getElementById('notificationCenter');
+      center.classList.toggle('active');
+    }
+    
+    // FAB Menu
+    function toggleFABMenu() {
+      const menu = document.getElementById('fabMenu');
+      menu.classList.toggle('active');
+    }
+    
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  </script>
+  
+  <!-- Theme Switcher -->
+  <div id="themeSwitcher" class="theme-switcher">
+    <h3 style="margin-bottom: 15px;">🎨 Choose Theme</h3>
+    <div class="theme-option" onclick="setTheme('dark')">
+      <div class="theme-preview dark"></div>
+      <span>Dark</span>
+    </div>
+    <div class="theme-option" onclick="setTheme('light')">
+      <div class="theme-preview light"></div>
+      <span>Light</span>
+    </div>
+    <div class="theme-option" onclick="setTheme('amoled')">
+      <div class="theme-preview amoled"></div>
+      <span>AMOLED</span>
+    </div>
+    <div class="theme-option" onclick="setTheme('purple')">
+      <div class="theme-preview purple"></div>
+      <span>Purple</span>
+    </div>
+    <div class="theme-option" onclick="setTheme('nord')">
+      <div class="theme-preview nord"></div>
+      <span>Nord</span>
+    </div>
+  </div>
+  
+  <!-- Notification Center -->
+  <div id="notificationCenter" class="notification-center">
+    <div class="notification-header">
+      <h3>🔔 Notifications</h3>
+      <button class="btn btn-sm btn-secondary" onclick="toggleNotifications()">✕</button>
+    </div>
+    <div class="notification-list">
+      <p style="text-align: center; color: var(--text-muted); padding: 20px;">
+        No new notifications
+      </p>
+    </div>
+  </div>
+  
+  <!-- Floating Action Button -->
+  <div class="fab-container">
+    <div id="fabMenu" class="fab-menu">
+      <a href="/templates" class="fab-item">📝 Templates</a>
+      <a href="/search" class="fab-item">🔍 Search</a>
+      <a href="/multi-account" class="fab-item">👥 Multi-Account</a>
+      <a href="/raid-protection" class="fab-item">🛡️ Raid Protection</a>
+      <a href="/backup-manager" class="fab-item">💾 Backups</a>
+      <button class="fab-item" onclick="toggleThemeSwitcher()">🎨 Theme</button>
+    </div>
+    <button class="fab" onclick="toggleFABMenu()">+</button>
+  </div>
+</body>
+</html>
