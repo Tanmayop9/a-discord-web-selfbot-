@@ -53,6 +53,7 @@ A comprehensive web-based dashboard for Discord selfbots using discord.js-selfbo
 - 🔊 **Soundboard Manager**: Browse and send soundboard sounds
 - ⚙️ **Advanced Settings**: Granular control over Discord settings (privacy, appearance, etc.)
 - 📱 **Mobile Presence Simulator**: Change device status (Desktop, Mobile, Web)
+- 🤖 **Bot Creator / Application Manager**: Create multiple Discord bot applications at once with configurable intents and automatic token saving
 
 ### Advanced Features
 - ✨ **Custom Status**: Set custom status with emoji and expiration

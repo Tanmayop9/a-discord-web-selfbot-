@@ -6,6 +6,7 @@ const path = require('path');
 const multer = require('multer');
 const http = require('http');
 const socketIO = require('socket.io');
+const axios = require('axios');
 require('dotenv').config();
 
 const app = express();
@@ -81,6 +82,9 @@ let quickActions = [
   { id: 3, name: 'Mass DM', action: 'massdm', icon: '📬' },
   { id: 4, name: 'Analytics', action: 'analytics', icon: '📊' }
 ];
+
+// Bot Creator storage
+let createdBots = [];
 
 // Socket.IO for real-time updates
 io.on('connection', (socket) => {
@@ -2645,6 +2649,218 @@ app.post('/presence/device', async (req, res) => {
     
     // Note: Changing device status requires modifying WebSocket properties
     res.json({ success: true, device: deviceStatus, message: 'Device status updated locally' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ========================================
+// BOT CREATOR / APPLICATION MANAGER
+// ========================================
+
+app.get('/bot-creator', async (req, res) => {
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  res.render('bot-creator', { 
+    bots: createdBots, 
+    user: client.user 
+  });
+});
+
+app.post('/bot-creator/create', async (req, res) => {
+  const { botNames, enableIntents } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    const botsArray = Array.isArray(botNames) ? botNames : [botNames];
+    const createdBotsInfo = [];
+    const failedBots = [];
+    
+    for (const botName of botsArray) {
+      if (!botName || botName.trim() === '') continue;
+      
+      try {
+        // Create application via Discord API
+        const createResponse = await axios.post(
+          'https://discord.com/api/v9/applications',
+          { name: botName.trim() },
+          {
+            headers: {
+              'Authorization': DISCORD_TOKEN,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        const appId = createResponse.data.id;
+        
+        // Create bot user
+        const botResponse = await axios.post(
+          `https://discord.com/api/v9/applications/${appId}/bot`,
+          {},
+          {
+            headers: {
+              'Authorization': DISCORD_TOKEN,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        const botToken = botResponse.data.token;
+        
+        // Enable intents if requested
+        if (enableIntents) {
+          const intentsValue = 32767; // All intents
+          await axios.patch(
+            `https://discord.com/api/v9/applications/${appId}`,
+            { 
+              bot_public: false,
+              bot_require_code_grant: false,
+              flags: intentsValue
+            },
+            {
+              headers: {
+                'Authorization': DISCORD_TOKEN,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+        }
+        
+        const botInfo = {
+          id: appId,
+          name: botName.trim(),
+          token: botToken,
+          intentsEnabled: enableIntents || false,
+          createdAt: new Date().toISOString()
+        };
+        
+        createdBots.push(botInfo);
+        createdBotsInfo.push(botInfo);
+        
+      } catch (error) {
+        console.error(`Failed to create bot ${botName}:`, error.message);
+        failedBots.push({ name: botName, error: error.message });
+      }
+    }
+    
+    // Save tokens to file
+    if (createdBotsInfo.length > 0) {
+      const fs = require('fs');
+      const tokensDir = '/tmp/bot-tokens';
+      if (!fs.existsSync(tokensDir)) {
+        fs.mkdirSync(tokensDir, { recursive: true });
+      }
+      
+      const timestamp = Date.now();
+      const filename = `bot_tokens_${timestamp}.txt`;
+      const filepath = path.join(tokensDir, filename);
+      
+      let fileContent = `# Discord Bot Tokens\n`;
+      fileContent += `# Created: ${new Date().toLocaleString()}\n`;
+      fileContent += `# Total Bots: ${createdBotsInfo.length}\n\n`;
+      
+      createdBotsInfo.forEach((bot, index) => {
+        fileContent += `# Bot ${index + 1}: ${bot.name}\n`;
+        fileContent += `Application ID: ${bot.id}\n`;
+        fileContent += `Token: ${bot.token}\n`;
+        fileContent += `Intents Enabled: ${bot.intentsEnabled}\n`;
+        fileContent += `Created: ${bot.createdAt}\n`;
+        fileContent += `\n`;
+      });
+      
+      fs.writeFileSync(filepath, fileContent);
+      
+      res.json({ 
+        success: true, 
+        bots: createdBotsInfo,
+        failed: failedBots,
+        tokenFile: filename,
+        downloadUrl: `/download-tokens/${filename}`
+      });
+    } else {
+      res.status(500).json({ 
+        error: 'Failed to create any bots', 
+        failed: failedBots 
+      });
+    }
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/download-tokens/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filepath = path.join('/tmp/bot-tokens', filename);
+  
+  if (require('fs').existsSync(filepath)) {
+    res.download(filepath);
+  } else {
+    res.status(404).send('File not found');
+  }
+});
+
+app.post('/bot-creator/delete', async (req, res) => {
+  const { botId } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    // Delete application
+    await axios.delete(
+      `https://discord.com/api/v9/applications/${botId}`,
+      {
+        headers: {
+          'Authorization': DISCORD_TOKEN
+        }
+      }
+    );
+    
+    // Remove from local storage
+    createdBots = createdBots.filter(bot => bot.id !== botId);
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/bot-creator/update-intents', async (req, res) => {
+  const { botId, intents } = req.body;
+  
+  if (!botReady) {
+    return res.status(503).json({ error: 'Bot not ready' });
+  }
+  
+  try {
+    // Update bot intents
+    await axios.patch(
+      `https://discord.com/api/v9/applications/${botId}`,
+      { flags: intents },
+      {
+        headers: {
+          'Authorization': DISCORD_TOKEN,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    // Update local storage
+    const bot = createdBots.find(b => b.id === botId);
+    if (bot) {
+      bot.intentsEnabled = true;
+      bot.intentsValue = intents;
+    }
+    
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
