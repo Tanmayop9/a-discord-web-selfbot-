@@ -4,15 +4,23 @@
 
 ## Description
 
-This is a Python-based Discord selfbot that allows you to run multiple Discord accounts simultaneously and execute commands from your own account. The selfbot supports a `.say` command that can send messages to any channel the account has access to.
+This is a Python-based Discord selfbot that allows you to run multiple Discord accounts simultaneously and execute commands from your own account. The selfbot supports multiple commands including `.say`, `.purge`, `.spam`, `.embed`, `.edit`, `.ping`, and `.help`.
 
 ## Features
 
 - **Multi-token support**: Load and run multiple Discord accounts concurrently
-- **`.say` command**: Send messages to specified channels with customizable repetition
+- **Multiple commands**: 7 useful commands for automation and convenience
+  - `.say` - Send messages to specified channels with customizable repetition
+  - `.purge` - Delete your own messages in the current channel
+  - `.spam` - Spam messages in the current channel
+  - `.embed` - Send embedded messages
+  - `.edit` - Edit your last message
+  - `.ping` - Check bot latency
+  - `.help` - List all available commands
 - **Error handling**: Comprehensive error handling for invalid channels, missing permissions, and rate limits
 - **Rate limit protection**: Built-in delays to prevent hitting Discord's rate limits
 - **Concurrent execution**: All selfbots run simultaneously using asyncio
+- **Single file**: Everything in one easy-to-use script
 
 ## Requirements
 
@@ -59,9 +67,11 @@ The selfbot will:
 2. Log in to Discord with each token
 3. Wait for commands from your own messages
 
-### Using the `.say` Command
+### Available Commands
 
-Once the selfbot is running, send a message in any Discord channel where you're logged in:
+Once the selfbot is running, you can use any of the following commands by sending a message in any Discord channel where you're logged in:
+
+#### `.say` - Send messages to a specific channel
 
 ```
 .say <channel_id> <message> [times]
@@ -83,6 +93,90 @@ Send a message 5 times:
 ```
 .say 1234567890123456789 "Test message" 5
 ```
+
+#### `.purge` - Delete your own messages
+
+```
+.purge [limit]
+```
+
+**Parameters:**
+- `limit` (optional): Number of messages to check and delete (default: 10, max: 100)
+
+**Examples:**
+
+Delete your last 10 messages:
+```
+.purge
+```
+
+Delete your last 50 messages:
+```
+.purge 50
+```
+
+#### `.spam` - Spam messages in current channel
+
+```
+.spam <times> <message>
+```
+
+**Parameters:**
+- `times` (required): Number of times to send the message (max: 50)
+- `message` (required): The message to spam
+
+**Example:**
+
+```
+.spam 5 Hello everyone!
+```
+
+#### `.embed` - Send an embedded message
+
+```
+.embed <title> <description>
+```
+
+**Parameters:**
+- `title` (required): Title of the embed
+- `description` (required): Description text for the embed
+
+**Example:**
+
+```
+.embed "Important Announcement" "This is a test embed message"
+```
+
+#### `.edit` - Edit your last message
+
+```
+.edit <new_content>
+```
+
+**Parameters:**
+- `new_content` (required): The new content for your last message
+
+**Example:**
+
+```
+.edit This is the edited content
+```
+
+#### `.ping` - Check bot latency
+
+```
+.ping
+```
+
+Shows the bot's latency in milliseconds.
+
+#### `.help` - Show help message
+
+```
+.help
+```
+
+Displays a list of all available commands with their usage.
 
 ### Getting a Channel ID
 

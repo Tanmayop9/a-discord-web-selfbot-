@@ -4,7 +4,7 @@ WARNING: Using selfbots violates Discord's Terms of Service.
 This script is for educational purposes only.
 
 This script loads multiple Discord tokens and runs selfbots that can execute
-the .say command to send messages to specified channels.
+various commands including .say, .purge, .spam, .embed, .edit, .ping, and .help.
 """
 
 import asyncio
@@ -170,6 +170,198 @@ async def setup_bot(token: str) -> Optional[SelfBot]:
         except Exception as e:
             await ctx.send(f"Unexpected error in say command: {str(e)}")
             print(f"Error in say command: {e}")
+    
+    @bot.command(name='purge')
+    async def purge(ctx, limit: int = 10):
+        """
+        Delete your own messages in the current channel.
+        
+        Usage: .purge [limit]
+        
+        Args:
+            limit: Number of messages to check and delete (default: 10, max: 100)
+        """
+        try:
+            if limit < 1:
+                await ctx.send("Error: limit must be at least 1")
+                return
+                
+            if limit > 100:
+                await ctx.send("Error: limit cannot exceed 100")
+                return
+            
+            deleted = 0
+            async for message in ctx.channel.history(limit=limit):
+                if message.author.id == bot.user.id:
+                    try:
+                        await message.delete()
+                        deleted += 1
+                        await asyncio.sleep(0.5)  # Avoid rate limiting
+                    except discord.Forbidden:
+                        await ctx.send("Error: Missing permissions to delete messages")
+                        break
+                    except discord.HTTPException:
+                        continue
+            
+            if deleted > 0:
+                print(f"Deleted {deleted} message(s) in channel {ctx.channel.id}")
+                
+        except Exception as e:
+            await ctx.send(f"Error in purge command: {str(e)}")
+            print(f"Error in purge command: {e}")
+    
+    @bot.command(name='spam')
+    async def spam(ctx, times: int, *, message: str):
+        """
+        Spam a message in the current channel.
+        
+        Usage: .spam <times> <message>
+        
+        Args:
+            times: Number of times to send the message (max: 50)
+            message: The message to spam
+        """
+        try:
+            if times < 1:
+                await ctx.send("Error: times must be at least 1")
+                return
+                
+            if times > 50:
+                await ctx.send("Error: times cannot exceed 50 (rate limit protection)")
+                return
+            
+            for i in range(times):
+                try:
+                    await ctx.send(message)
+                    if i < times - 1:
+                        await asyncio.sleep(1)  # Avoid rate limiting
+                except discord.Forbidden:
+                    await ctx.send(f"Error: Missing permissions (sent {i}/{times})")
+                    break
+                except discord.HTTPException as e:
+                    if e.status == 429:
+                        await ctx.send(f"Rate limited. Sent {i}/{times} messages.")
+                        break
+            
+            print(f"Spammed '{message}' {times} times in channel {ctx.channel.id}")
+            
+        except Exception as e:
+            await ctx.send(f"Error in spam command: {str(e)}")
+            print(f"Error in spam command: {e}")
+    
+    @bot.command(name='embed')
+    async def embed(ctx, title: str, *, description: str):
+        """
+        Send an embedded message.
+        
+        Usage: .embed <title> <description>
+        
+        Args:
+            title: Title of the embed
+            description: Description text for the embed
+        """
+        try:
+            embed_msg = discord.Embed(
+                title=title,
+                description=description,
+                color=discord.Color.blue()
+            )
+            embed_msg.set_footer(text=f"Sent by {ctx.author.name}")
+            await ctx.send(embed=embed_msg)
+            print(f"Sent embed with title '{title}' in channel {ctx.channel.id}")
+            
+        except discord.Forbidden:
+            await ctx.send("Error: Missing permissions to send embeds")
+        except Exception as e:
+            await ctx.send(f"Error in embed command: {str(e)}")
+            print(f"Error in embed command: {e}")
+    
+    @bot.command(name='edit')
+    async def edit(ctx, *, new_content: str):
+        """
+        Edit your last message in the current channel.
+        
+        Usage: .edit <new_content>
+        
+        Args:
+            new_content: The new content for the message
+        """
+        try:
+            async for message in ctx.channel.history(limit=10):
+                if message.author.id == bot.user.id and message.id != ctx.message.id:
+                    try:
+                        await message.edit(content=new_content)
+                        await ctx.message.delete()
+                        print(f"Edited message in channel {ctx.channel.id}")
+                        return
+                    except discord.Forbidden:
+                        await ctx.send("Error: Cannot edit that message")
+                        return
+                    except discord.HTTPException as e:
+                        await ctx.send(f"Error editing message: {str(e)}")
+                        return
+            
+            await ctx.send("No recent message found to edit")
+            
+        except Exception as e:
+            await ctx.send(f"Error in edit command: {str(e)}")
+            print(f"Error in edit command: {e}")
+    
+    @bot.command(name='ping')
+    async def ping(ctx):
+        """
+        Check the bot's latency.
+        
+        Usage: .ping
+        """
+        try:
+            latency = round(bot.latency * 1000)
+            await ctx.send(f"Pong! Latency: {latency}ms")
+            
+        except Exception as e:
+            await ctx.send(f"Error in ping command: {str(e)}")
+            print(f"Error in ping command: {e}")
+    
+    @bot.command(name='help')
+    async def help_command(ctx):
+        """
+        List all available commands.
+        
+        Usage: .help
+        """
+        try:
+            help_text = """
+**Available Commands:**
+
+`.say <channel_id> <message> [times]` - Send a message to a specified channel
+  • channel_id: Target channel ID
+  • message: Message to send
+  • times: Number of times to send (default: 2, max: 100)
+
+`.purge [limit]` - Delete your own messages in current channel
+  • limit: Number of messages to check (default: 10, max: 100)
+
+`.spam <times> <message>` - Spam a message in current channel
+  • times: Number of times to send (max: 50)
+  • message: Message to spam
+
+`.embed <title> <description>` - Send an embedded message
+  • title: Embed title
+  • description: Embed description
+
+`.edit <new_content>` - Edit your last message
+  • new_content: New message content
+
+`.ping` - Check bot latency
+
+`.help` - Show this help message
+
+**WARNING:** Using selfbots violates Discord's Terms of Service.
+"""
+            await ctx.send(help_text)
+            
+        except Exception as e:
+            print(f"Error in help command: {e}")
     
     return bot
 
