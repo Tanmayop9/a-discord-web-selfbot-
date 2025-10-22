@@ -1,0 +1,18 @@
+# Discord Tokens File
+# Add one token per line
+# Lines starting with # are comments and will be ignored
+# 
+# Example format (this is NOT a real token):
+# YOUR_DISCORD_TOKEN_HERE
+# ANOTHER_DISCORD_TOKEN_HERE
+# 
+# To get your Discord token:
+# 1. Open Discord in a web browser
+# 2. Press F12 to open Developer Tools
+# 3. Go to the Network tab
+# 4. Refresh the page
+# 5. Look for requests and find the Authorization header
+# 
+# WARNING: Never share your Discord tokens with anyone!
+# Keep this file private and secure.
+# Tokens look like: MTIz...ABC.DEF...XYZ (but much longer)
