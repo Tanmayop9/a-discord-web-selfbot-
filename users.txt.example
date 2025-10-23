@@ -1,0 +1,18 @@
+# Authorized User IDs
+# Add one Discord user ID per line
+# Lines starting with # are comments and will be ignored
+# 
+# To get your Discord user ID:
+# 1. Enable Developer Mode in Discord (User Settings → Advanced → Developer Mode)
+# 2. Right-click on your username
+# 3. Click "Copy ID"
+#
+# Example format (these are NOT real user IDs):
+# 123456789012345678
+# 234567890123456789
+# 345678901234567890
+#
+# If this file is empty or doesn't exist, ALL users can use commands.
+# Add user IDs below to restrict command access to specific users only.
+#
+# WARNING: Keep this file private and secure!
