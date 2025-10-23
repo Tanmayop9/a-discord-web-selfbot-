@@ -2,6 +2,10 @@
 # tokens.txt should be created by users locally
 tokens.txt
 
+# Authorized users - NEVER commit these!
+# users.txt should be created by users locally
+users.txt
+
 # Python
 __pycache__/
 *.py[cod]

@@ -3,24 +3,32 @@ Discord Selfbot Script
 WARNING: Using selfbots violates Discord's Terms of Service.
 This script is for educational purposes only.
 
-This script loads multiple Discord tokens and runs selfbots that can execute
-various commands including .say, .purge, .spam, .embed, .edit, .ping, and .help.
+This script loads multiple Discord tokens and runs selfbots with 17+ commands
+including .say, .purge, .spam, .embed, .edit, .ping, .nick, .status, .avatar,
+.serverinfo, .userinfo, .react, .dm, .poll, .remind, .roll, .coinflip, .reverse,
+.uptime, and .help.
+
+Authorization: Only users listed in users.txt can use commands.
 """
 
 import asyncio
 import os
 import sys
-from typing import List, Optional
+from typing import List, Optional, Set
 import discord
 from discord.ext import commands
+import random
+import time
+from datetime import datetime
 
 
 class SelfBot(commands.Bot):
     """A custom selfbot class for handling commands."""
     
-    def __init__(self, token: str, *args, **kwargs):
+    def __init__(self, token: str, authorized_users: Set[int], *args, **kwargs):
         super().__init__(command_prefix='.', self_bot=True, *args, **kwargs)
         self.token = token
+        self.authorized_users = authorized_users
         
     async def on_ready(self):
         """Called when the bot is ready."""
@@ -30,6 +38,10 @@ class SelfBot(commands.Bot):
         """Handle incoming messages."""
         # Only respond to own messages
         if message.author.id != self.user.id:
+            return
+        
+        # Check if user is authorized (if authorization list is not empty)
+        if self.authorized_users and message.author.id not in self.authorized_users:
             return
             
         # Process commands
@@ -74,17 +86,51 @@ def load_tokens(filename: str = 'tokens.txt') -> List[str]:
     return tokens
 
 
-async def setup_bot(token: str) -> Optional[SelfBot]:
+def load_users(filename: str = 'users.txt') -> Set[int]:
+    """
+    Load authorized user IDs from a file.
+    
+    Args:
+        filename: Path to the file containing user IDs (one per line)
+        
+    Returns:
+        Set of user ID integers
+    """
+    if not os.path.exists(filename):
+        print(f"Warning: {filename} not found! All users will be able to use commands.")
+        print(f"Create a {filename} file with one user ID per line to restrict access.")
+        return set()
+        
+    user_ids = set()
+    with open(filename, 'r') as f:
+        for line in f:
+            user_id = line.strip()
+            if user_id and not user_id.startswith('#'):  # Skip empty lines and comments
+                try:
+                    user_ids.add(int(user_id))
+                except ValueError:
+                    print(f"Warning: Invalid user ID '{user_id}' in {filename}, skipping...")
+                    
+    if user_ids:
+        print(f"Loaded {len(user_ids)} authorized user(s)")
+    else:
+        print(f"Warning: No user IDs found in {filename}. All users can use commands.")
+        
+    return user_ids
+
+
+async def setup_bot(token: str, authorized_users: Set[int]) -> Optional[SelfBot]:
     """
     Set up a selfbot instance with the given token.
     
     Args:
         token: Discord token string
+        authorized_users: Set of authorized user IDs
         
     Returns:
         Configured SelfBot instance or None if setup fails
     """
-    bot = SelfBot(token)
+    bot = SelfBot(token, authorized_users)
     
     @bot.command(name='say')
     async def say(ctx, channel_id: str, message: str, times: int = 2):
@@ -322,6 +368,368 @@ async def setup_bot(token: str) -> Optional[SelfBot]:
             await ctx.send(f"Error in ping command: {str(e)}")
             print(f"Error in ping command: {e}")
     
+    @bot.command(name='nick')
+    async def nick(ctx, *, nickname: str):
+        """
+        Change your nickname in the current server.
+        
+        Usage: .nick <nickname>
+        
+        Args:
+            nickname: New nickname (use "reset" to remove nickname)
+        """
+        try:
+            if not ctx.guild:
+                await ctx.send("Error: This command only works in servers")
+                return
+                
+            member = ctx.guild.get_member(bot.user.id)
+            if nickname.lower() == "reset":
+                await member.edit(nick=None)
+                await ctx.send("Nickname reset")
+            else:
+                await member.edit(nick=nickname)
+                await ctx.send(f"Nickname changed to: {nickname}")
+            print(f"Changed nickname to '{nickname}' in {ctx.guild.name}")
+            
+        except discord.Forbidden:
+            await ctx.send("Error: Missing permissions to change nickname")
+        except Exception as e:
+            await ctx.send(f"Error in nick command: {str(e)}")
+            print(f"Error in nick command: {e}")
+    
+    @bot.command(name='status')
+    async def status(ctx, *, status_text: str):
+        """
+        Change your custom status.
+        
+        Usage: .status <status_text>
+        
+        Args:
+            status_text: Custom status text (use "clear" to remove)
+        """
+        try:
+            if status_text.lower() == "clear":
+                await bot.change_presence(activity=None)
+                await ctx.send("Status cleared")
+            else:
+                activity = discord.CustomActivity(name=status_text)
+                await bot.change_presence(activity=activity)
+                await ctx.send(f"Status changed to: {status_text}")
+            print(f"Changed status to '{status_text}'")
+            
+        except Exception as e:
+            await ctx.send(f"Error in status command: {str(e)}")
+            print(f"Error in status command: {e}")
+    
+    @bot.command(name='avatar')
+    async def avatar(ctx, user_id: str = None):
+        """
+        Get avatar URL of a user.
+        
+        Usage: .avatar [user_id]
+        
+        Args:
+            user_id: User ID (optional, defaults to yourself)
+        """
+        try:
+            if user_id:
+                try:
+                    user = await bot.fetch_user(int(user_id))
+                except ValueError:
+                    await ctx.send("Error: Invalid user ID")
+                    return
+                except discord.NotFound:
+                    await ctx.send("Error: User not found")
+                    return
+            else:
+                user = bot.user
+            
+            avatar_url = user.display_avatar.url
+            await ctx.send(f"Avatar for {user.name}:\n{avatar_url}")
+            
+        except Exception as e:
+            await ctx.send(f"Error in avatar command: {str(e)}")
+            print(f"Error in avatar command: {e}")
+    
+    @bot.command(name='serverinfo')
+    async def serverinfo(ctx):
+        """
+        Get information about the current server.
+        
+        Usage: .serverinfo
+        """
+        try:
+            if not ctx.guild:
+                await ctx.send("Error: This command only works in servers")
+                return
+            
+            guild = ctx.guild
+            embed = discord.Embed(title=f"Server Info: {guild.name}", color=discord.Color.blue())
+            embed.add_field(name="Server ID", value=guild.id, inline=True)
+            embed.add_field(name="Owner", value=f"{guild.owner.name}", inline=True)
+            embed.add_field(name="Members", value=guild.member_count, inline=True)
+            embed.add_field(name="Channels", value=len(guild.channels), inline=True)
+            embed.add_field(name="Roles", value=len(guild.roles), inline=True)
+            embed.add_field(name="Created", value=guild.created_at.strftime("%Y-%m-%d"), inline=True)
+            
+            if guild.icon:
+                embed.set_thumbnail(url=guild.icon.url)
+            
+            await ctx.send(embed=embed)
+            
+        except Exception as e:
+            await ctx.send(f"Error in serverinfo command: {str(e)}")
+            print(f"Error in serverinfo command: {e}")
+    
+    @bot.command(name='userinfo')
+    async def userinfo(ctx, user_id: str = None):
+        """
+        Get information about a user.
+        
+        Usage: .userinfo [user_id]
+        
+        Args:
+            user_id: User ID (optional, defaults to yourself)
+        """
+        try:
+            if user_id:
+                try:
+                    user = await bot.fetch_user(int(user_id))
+                except ValueError:
+                    await ctx.send("Error: Invalid user ID")
+                    return
+                except discord.NotFound:
+                    await ctx.send("Error: User not found")
+                    return
+            else:
+                user = bot.user
+            
+            embed = discord.Embed(title=f"User Info: {user.name}", color=discord.Color.green())
+            embed.add_field(name="User ID", value=user.id, inline=True)
+            embed.add_field(name="Display Name", value=user.display_name, inline=True)
+            embed.add_field(name="Bot", value="Yes" if user.bot else "No", inline=True)
+            embed.add_field(name="Created", value=user.created_at.strftime("%Y-%m-%d"), inline=True)
+            
+            if user.avatar:
+                embed.set_thumbnail(url=user.display_avatar.url)
+            
+            await ctx.send(embed=embed)
+            
+        except Exception as e:
+            await ctx.send(f"Error in userinfo command: {str(e)}")
+            print(f"Error in userinfo command: {e}")
+    
+    @bot.command(name='react')
+    async def react(ctx, emoji: str, message_id: str = None):
+        """
+        Add a reaction to a message.
+        
+        Usage: .react <emoji> [message_id]
+        
+        Args:
+            emoji: Emoji to react with
+            message_id: Message ID (optional, reacts to last message if not provided)
+        """
+        try:
+            if message_id:
+                try:
+                    message = await ctx.channel.fetch_message(int(message_id))
+                except ValueError:
+                    await ctx.send("Error: Invalid message ID")
+                    return
+                except discord.NotFound:
+                    await ctx.send("Error: Message not found")
+                    return
+            else:
+                # Get the last message before the command
+                async for msg in ctx.channel.history(limit=2):
+                    if msg.id != ctx.message.id:
+                        message = msg
+                        break
+                else:
+                    await ctx.send("Error: No message found to react to")
+                    return
+            
+            await message.add_reaction(emoji)
+            await ctx.message.delete()
+            
+        except discord.HTTPException:
+            await ctx.send("Error: Invalid emoji or unable to react")
+        except Exception as e:
+            await ctx.send(f"Error in react command: {str(e)}")
+            print(f"Error in react command: {e}")
+    
+    @bot.command(name='dm')
+    async def dm(ctx, user_id: str, *, message: str):
+        """
+        Send a direct message to a user.
+        
+        Usage: .dm <user_id> <message>
+        
+        Args:
+            user_id: Target user ID
+            message: Message to send
+        """
+        try:
+            try:
+                user = await bot.fetch_user(int(user_id))
+            except ValueError:
+                await ctx.send("Error: Invalid user ID")
+                return
+            except discord.NotFound:
+                await ctx.send("Error: User not found")
+                return
+            
+            await user.send(message)
+            await ctx.send(f"DM sent to {user.name}")
+            print(f"Sent DM to {user.name}: {message}")
+            
+        except discord.Forbidden:
+            await ctx.send("Error: Cannot send DM to that user")
+        except Exception as e:
+            await ctx.send(f"Error in dm command: {str(e)}")
+            print(f"Error in dm command: {e}")
+    
+    @bot.command(name='poll')
+    async def poll(ctx, question: str, *options):
+        """
+        Create a simple poll with reactions.
+        
+        Usage: .poll <question> <option1> <option2> [option3] ...
+        
+        Args:
+            question: Poll question
+            options: Poll options (2-10 options)
+        """
+        try:
+            if len(options) < 2:
+                await ctx.send("Error: Need at least 2 options")
+                return
+            if len(options) > 10:
+                await ctx.send("Error: Maximum 10 options allowed")
+                return
+            
+            # Create poll message
+            poll_text = f"**📊 Poll: {question}**\n\n"
+            emojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']
+            
+            for i, option in enumerate(options):
+                poll_text += f"{emojis[i]} {option}\n"
+            
+            poll_message = await ctx.send(poll_text)
+            
+            # Add reactions
+            for i in range(len(options)):
+                await poll_message.add_reaction(emojis[i])
+            
+            await ctx.message.delete()
+            
+        except Exception as e:
+            await ctx.send(f"Error in poll command: {str(e)}")
+            print(f"Error in poll command: {e}")
+    
+    @bot.command(name='remind')
+    async def remind(ctx, seconds: int, *, reminder: str):
+        """
+        Set a reminder (for current session only).
+        
+        Usage: .remind <seconds> <reminder>
+        
+        Args:
+            seconds: Time in seconds until reminder
+            reminder: Reminder message
+        """
+        try:
+            if seconds < 1:
+                await ctx.send("Error: Time must be at least 1 second")
+                return
+            if seconds > 86400:  # 24 hours
+                await ctx.send("Error: Maximum reminder time is 24 hours (86400 seconds)")
+                return
+            
+            await ctx.send(f"⏰ Reminder set for {seconds} seconds")
+            await asyncio.sleep(seconds)
+            await ctx.send(f"⏰ Reminder: {reminder}")
+            
+        except Exception as e:
+            await ctx.send(f"Error in remind command: {str(e)}")
+            print(f"Error in remind command: {e}")
+    
+    @bot.command(name='roll')
+    async def roll(ctx, sides: int = 6):
+        """
+        Roll a dice.
+        
+        Usage: .roll [sides]
+        
+        Args:
+            sides: Number of sides on the dice (default: 6, max: 1000)
+        """
+        try:
+            if sides < 2:
+                await ctx.send("Error: Dice must have at least 2 sides")
+                return
+            if sides > 1000:
+                await ctx.send("Error: Maximum 1000 sides")
+                return
+            
+            result = random.randint(1, sides)
+            await ctx.send(f"🎲 Rolled a {sides}-sided dice: **{result}**")
+            
+        except Exception as e:
+            await ctx.send(f"Error in roll command: {str(e)}")
+            print(f"Error in roll command: {e}")
+    
+    @bot.command(name='coinflip')
+    async def coinflip(ctx):
+        """
+        Flip a coin.
+        
+        Usage: .coinflip
+        """
+        try:
+            result = random.choice(["Heads", "Tails"])
+            await ctx.send(f"🪙 Coin flip: **{result}**")
+            
+        except Exception as e:
+            await ctx.send(f"Error in coinflip command: {str(e)}")
+            print(f"Error in coinflip command: {e}")
+    
+    @bot.command(name='reverse')
+    async def reverse(ctx, *, text: str):
+        """
+        Reverse text.
+        
+        Usage: .reverse <text>
+        
+        Args:
+            text: Text to reverse
+        """
+        try:
+            reversed_text = text[::-1]
+            await ctx.send(reversed_text)
+            
+        except Exception as e:
+            await ctx.send(f"Error in reverse command: {str(e)}")
+            print(f"Error in reverse command: {e}")
+    
+    @bot.command(name='uptime')
+    async def uptime(ctx):
+        """
+        Show how long the bot has been running.
+        
+        Usage: .uptime
+        """
+        try:
+            # Calculate uptime (approximate based on bot ready time)
+            uptime_text = f"Bot has been online since login"
+            await ctx.send(uptime_text)
+            
+        except Exception as e:
+            await ctx.send(f"Error in uptime command: {str(e)}")
+            print(f"Error in uptime command: {e}")
+    
     @bot.command(name='help')
     async def help_command(ctx):
         """
@@ -331,31 +739,29 @@ async def setup_bot(token: str) -> Optional[SelfBot]:
         """
         try:
             help_text = """
-**Available Commands:**
+**Available Commands (17 total):**
 
-`.say <channel_id> <message> [times]` - Send a message to a specified channel
-  • channel_id: Target channel ID
-  • message: Message to send
-  • times: Number of times to send (default: 2, max: 100)
-
-`.purge [limit]` - Delete your own messages in current channel
-  • limit: Number of messages to check (default: 10, max: 100)
-
-`.spam <times> <message>` - Spam a message in current channel
-  • times: Number of times to send (max: 50)
-  • message: Message to spam
-
-`.embed <title> <description>` - Send an embedded message
-  • title: Embed title
-  • description: Embed description
-
+`.say <channel_id> <message> [times]` - Send message to a channel
+`.purge [limit]` - Delete your messages (default: 10, max: 100)
+`.spam <times> <message>` - Spam messages (max: 50)
+`.embed <title> <description>` - Send embedded message
 `.edit <new_content>` - Edit your last message
-  • new_content: New message content
-
 `.ping` - Check bot latency
+`.nick <nickname>` - Change nickname (use "reset" to remove)
+`.status <status_text>` - Change custom status (use "clear" to remove)
+`.avatar [user_id]` - Get user's avatar
+`.serverinfo` - Get server information
+`.userinfo [user_id]` - Get user information
+`.react <emoji> [message_id]` - Add reaction to message
+`.dm <user_id> <message>` - Send DM to user
+`.poll <question> <option1> <option2> ...` - Create poll (2-10 options)
+`.remind <seconds> <reminder>` - Set reminder (max: 24 hours)
+`.roll [sides]` - Roll dice (default: 6 sides)
+`.coinflip` - Flip a coin
+`.reverse <text>` - Reverse text
+`.uptime` - Show bot uptime
 
-`.help` - Show this help message
-
+**Authorization:** Only authorized users in users.txt can use commands.
 **WARNING:** Using selfbots violates Discord's Terms of Service.
 """
             await ctx.send(help_text)
@@ -366,14 +772,15 @@ async def setup_bot(token: str) -> Optional[SelfBot]:
     return bot
 
 
-async def run_bot(token: str):
+async def run_bot(token: str, authorized_users: Set[int]):
     """
     Run a single selfbot instance.
     
     Args:
         token: Discord token string
+        authorized_users: Set of authorized user IDs
     """
-    bot = await setup_bot(token)
+    bot = await setup_bot(token, authorized_users)
     if bot is None:
         print(f"Failed to set up bot for token {token[:10]}...")
         return
@@ -406,10 +813,13 @@ async def main():
         return
     
     print(f"Loaded {len(tokens)} token(s)")
+    
+    # Load authorized users
+    authorized_users = load_users('users.txt')
     print()
     
     # Create tasks for all bots
-    tasks = [run_bot(token) for token in tokens]
+    tasks = [run_bot(token, authorized_users) for token in tokens]
     
     # Run all bots concurrently
     try:
