@@ -21,9 +21,21 @@ By using this tool, you acknowledge that you understand these risks and accept f
 
 ## What This Tool Does
 
-This is an advanced Discord guild (server) migration tool that copies messages and content from one Discord server to another. It includes:
+This repository contains two powerful Discord selfbot tools:
 
-### Features
+### 1. Message Migration Tool (`migrate.js`)
+
+An advanced Discord guild (server) migration tool that copies messages and content from one Discord server to another.
+
+### 2. Emoji & Sticker Copier (`copy-emojis-stickers.js`)
+
+A specialized tool to copy emojis and stickers between Discord servers. **Emoji copying works without Nitro!** Sticker copying may require server boost level.
+
+---
+
+## Features
+
+### Message Migration Tool
 
 ✅ **Message Migration**: Copies all messages from source to target server  
 ✅ **Attachment Support**: Downloads and re-uploads all message attachments  
@@ -36,6 +48,16 @@ This is an advanced Discord guild (server) migration tool that copies messages a
 ✅ **Rate Limiting**: Built-in delays to avoid API rate limits  
 ✅ **Retry Logic**: Automatic retry for failed operations  
 ✅ **Progress Logging**: Detailed console output of migration progress
+
+### Emoji & Sticker Copier
+
+✅ **Emoji Copying**: Download and upload all emojis from source to target server  
+✅ **No Nitro Required for Emojis**: Regular emojis can be copied without Nitro  
+✅ **Sticker Copying**: Attempts to copy stickers (may require server boost level)  
+✅ **Duplicate Detection**: Skips emojis/stickers that already exist  
+✅ **Format Support**: Handles PNG, APNG, GIF emojis and PNG/Lottie stickers  
+✅ **Rate Limiting**: Built-in delays to avoid API restrictions  
+✅ **Detailed Logging**: Shows progress and errors for each item
 
 ---
 
@@ -61,15 +83,17 @@ npm install
 ```
 
 3. Configure the tool by editing `migrate.js`:
-   - Set your `TOKEN` (your Discord user token)
-   - Set `SOURCE_GUILD_ID` (the server to copy from)
-   - Set `TARGET_GUILD_ID` (the server to copy to)
+3. Configure the appropriate tool:
+   - For message migration: Edit `migrate.js`
+   - For emoji/sticker copying: Edit `copy-emojis-stickers.js`
+   
+   Set your `TOKEN`, `SOURCE_GUILD_ID`, and `TARGET_GUILD_ID`
 
 ---
 
 ## Configuration
 
-Open `migrate.js` and modify the configuration section:
+### For Message Migration (`migrate.js`)
 
 ```javascript
 // ============ CONFIGURATION ============
@@ -78,9 +102,7 @@ const SOURCE_GUILD_ID = '123456789012345678'; // Source server ID
 const TARGET_GUILD_ID = '876543210987654321'; // Target server ID
 ```
 
-### Advanced Settings
-
-You can also adjust these settings:
+Advanced Settings:
 
 ```javascript
 const MESSAGE_BATCH_LIMIT = 100; // Messages to fetch per request
@@ -89,6 +111,23 @@ const ATTACHMENT_DOWNLOAD_DELAY_MS = 300; // Delay between downloads (ms)
 const ENABLE_FORWARDED_MESSAGES = true; // Detect forwarded messages
 const ENABLE_EMBEDS = true; // Copy embed information
 const ENABLE_STICKERS = true; // Note sticker usage
+```
+
+### For Emoji & Sticker Copier (`copy-emojis-stickers.js`)
+
+```javascript
+// ============ CONFIGURATION ============
+const TOKEN = 'your-user-token-here'; // Your Discord user token
+const SOURCE_GUILD_ID = '28292'; // Source server ID
+const TARGET_GUILD_ID = '29292'; // Target server ID
+```
+
+Advanced Settings:
+
+```javascript
+const COPY_EMOJIS = true; // Enable emoji copying
+const COPY_STICKERS = true; // Enable sticker copying
+const DELAY_MS = 1500; // Delay between operations (ms)
 ```
 
 ---
@@ -118,9 +157,61 @@ const ENABLE_STICKERS = true; // Note sticker usage
 
 ## Usage
 
-Once configured, run the migration:
+### Message Migration Tool
+
+Once configured, run the message migration:
 
 ```bash
+npm start
+```
+
+Or directly:
+
+```bash
+node migrate.js
+```
+
+### Emoji & Sticker Copier
+
+To copy emojis and stickers between servers:
+
+1. Edit `copy-emojis-stickers.js` and set:
+   - `TOKEN`: Your Discord user token
+   - `SOURCE_GUILD_ID`: Server to copy FROM (e.g., '28292')
+   - `TARGET_GUILD_ID`: Server to copy TO (e.g., '29292')
+
+2. Run the copier:
+
+```bash
+npm run copy-emojis
+```
+
+Or directly:
+
+```bash
+node copy-emojis-stickers.js
+```
+
+The tool will:
+- Display a warning message
+- Login to Discord with your token
+- Fetch all emojis and stickers from the source server
+- Download and upload them to the target server
+- Skip duplicates automatically
+- Display detailed progress and results
+
+**Note:** 
+- ✅ Emojis can be copied **without Nitro**
+- ⚠️ Stickers may require server Nitro boost level in the target server
+- You need "Manage Emojis and Stickers" permission in the target server
+
+---
+
+## Configuration Examples
+
+### For Message Migration (`migrate.js`)
+
+```javascript
 npm start
 ```
 

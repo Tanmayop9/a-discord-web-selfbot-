@@ -5,6 +5,7 @@
   "main": "migrate.js",
   "scripts": {
     "start": "node migrate.js",
+    "copy-emojis": "node copy-emojis-stickers.js",
     "test": "echo \"No tests specified\" && exit 0"
   },
   "keywords": [
