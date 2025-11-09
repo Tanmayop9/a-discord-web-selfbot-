@@ -1,0 +1,26 @@
+{
+  "name": "discord-guild-migrator",
+  "version": "1.0.0",
+  "description": "Advanced Discord guild migration tool - Educational purposes only",
+  "main": "migrate.js",
+  "scripts": {
+    "start": "node migrate.js",
+    "copy-emojis": "node copy-emojis-stickers.js",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "discord",
+    "selfbot",
+    "migration",
+    "educational"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js-selfbot-v13": "^2.14.12",
+    "node-fetch": "^2.7.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
